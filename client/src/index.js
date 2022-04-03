@@ -279,7 +279,7 @@ class Game extends React.Component {
 			return;
 		}
 		
-		this.ws = new WebSocket('wss://' + window.location.host);
+		this.ws = new WebSocket((window.location.host.indexOf("localhost") >= 0 ? 'ws://' : 'wss://') + window.location.host);
 		
 		this.ws.addEventListener('open', e => {
 		  this.ws.addEventListener('message', e => {
@@ -637,10 +637,16 @@ class Game extends React.Component {
   getKeyboardColorsFromGuessColors(guesses, guessColors) {
 	  let keyboardColors = {}
 	  for (let i in guesses) {
-		  let letter = guesses[i];
+		  let guess = guesses[i];
+		  let colorRow = guessColors[i];
 		  
-		  if (!(letter in keyboardColors) || guessColors[i] === GREEN) {
-			  keyboardColors[letter] = guessColors[i];
+		  for (let j in guess) {
+			  let letter = guess[j];
+			  let color = colorRow[j];
+			  
+			  if (!(letter in keyboardColors) || color === GREEN) {
+				  keyboardColors[letter] = color;
+			  }
 		  }
 	  }
 	  
