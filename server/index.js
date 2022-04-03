@@ -182,7 +182,7 @@ class Game {
 
 		for (let i = 0; i < arr_guess.length; i++) {
 			if (arr_guess[i]) {
-			  colors[i] = WHITE;
+			  colors[i] = BLACK;
 			}
 		}
 		return colors;
