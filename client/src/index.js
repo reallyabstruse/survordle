@@ -368,21 +368,17 @@ class Game extends React.Component {
 		  }
 	  }
 	  
-	  if (data.guessColors) {
+	  if (data.guesses && data.guessColors) {
 		  this.setState({
 			  guessColors: [...this.state.guessColors.slice(0, data.wordsToRemove || 0),
 							...data.guessColors],
-			  keyboardColors: this.getKeyboardColorsFromGuessColors(data.guessColors)
-		  });
-	  }
-	  
-	  if (data.guesses) {
-		  this.setState({
+			  keyboardColors: this.getKeyboardColorsFromGuessColors(data.guesses, data.guessColors),
 			  curguess: "",
 			  guesses: [...this.state.guesses.slice(0, data.wordsToRemove || 0),
 						...data.guesses]
 		  });
 	  }
+
 	  
 	  if (data.gameover) {
 		  this.setGameAndPlayerId(null, null);
