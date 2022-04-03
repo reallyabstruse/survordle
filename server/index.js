@@ -346,7 +346,7 @@ wss.on('connection', (ws) => {
 				}
 				
 				clientQueue.set(ws, new Game(message.wordRemove, message.hardMode, ws));
-				return sendJson(ws, {action: "wait"});
+				return sendJson(ws, {wait: true});
 			}
 			
 			case "guess":

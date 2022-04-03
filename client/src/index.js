@@ -112,7 +112,7 @@ class Settings extends React.Component {
             updateHandler={this.props.updateSetting}
           />
 		  
-		  <button onClick={this.props.startGame}>Start Game</button>
+		  <button onClick={this.props.startGame}>Start Game</button>{this.props.wait ? "Please wait..." : null}
         </div>
       </>
     );
@@ -333,8 +333,6 @@ class Game extends React.Component {
 		  this.sendJson({
 			  action: "ping"
 		  });
-	  } else {
-		  clearInterval(this.pingInterval);
 	  }
   }
   
@@ -345,7 +343,7 @@ class Game extends React.Component {
 		  this.showSuccess(data.success);
 	  }
 	  
-	  let passOnParameters = ["hardMode", "wordRemove", "wordsToRemove"];
+	  let passOnParameters = ["hardMode", "wordRemove", "wordsToRemove", "wait"];
 	  
 	  for (let p of passOnParameters) {
 		  if (p in data) {
@@ -389,7 +387,10 @@ class Game extends React.Component {
 			  gameoverMessage: data.gameoverMessage
 		  });
 	  } else if (data.gameId && data.playerId) {
-		  this.setState({showSettings: false});
+		  this.setState({
+			  showSettings: false,
+			  wait: false
+			});
 		  this.setGameAndPlayerId(data.gameId, data.playerId);
 	  }
   }
@@ -773,6 +774,7 @@ class Game extends React.Component {
             updateSetting={this.updateSetting}
             settings={this.state.settings}
 			gameoverMessage={this.state.gameoverMessage}
+			wait={this.state.wait}
           />
         ) : null}
 
