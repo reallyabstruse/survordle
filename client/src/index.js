@@ -302,6 +302,9 @@ class Game extends React.Component {
 		});
 		
 		this.ws.addEventListener('close', e => {
+			this.ws = null;
+			clearInterval(this.pingInterval);
+			
 			if (this.state.gameId && this.state.playerId) {
 				this.sendJson(null);
 			}
@@ -368,7 +371,8 @@ class Game extends React.Component {
 	  if (data.guessColors) {
 		  this.setState({
 			  guessColors: [...this.state.guessColors.slice(0, data.wordsToRemove || 0),
-							...data.guessColors]
+							...data.guessColors],
+			  keyboardColors: this.getKeyboardColorsFromGuessColors(data.guessColors)
 		  });
 	  }
 	  
@@ -628,6 +632,19 @@ class Game extends React.Component {
     }
 
     return colors;
+  }
+  
+  getKeyboardColorsFromGuessColors(guesses, guessColors) {
+	  let keyboardColors = {}
+	  for (let i in guesses) {
+		  let letter = guesses[i];
+		  
+		  if (!(letter in keyboardColors) || guessColors[i] === GREEN) {
+			  keyboardColors[letter] = guessColors[i];
+		  }
+	  }
+	  
+	  return keyboardColors;
   }
   
   addKeyboardColor(key, color) {
