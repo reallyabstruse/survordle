@@ -329,7 +329,7 @@ class Game extends React.Component {
   }
   
   sendPing() {
-	  if (this.state.gameId && this.state.playerId && this.ws && this.ws.readyState === WebSocket.OPEN) {
+	  if (this.ws && this.ws.readyState === WebSocket.OPEN) {
 		  this.sendJson({
 			  action: "ping"
 		  });

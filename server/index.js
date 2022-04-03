@@ -308,7 +308,7 @@ wss.on('connection', (ws) => {
 				
 				let game = games.get(message.gameId);
 				
-				let playerData = game.players[message.playerId];
+				let playerData = game.players.get(message.playerId);
 				if (playerData === undefined) {
 					return sendJson(ws, error("No such player in game", true));
 				}
@@ -357,6 +357,9 @@ wss.on('connection', (ws) => {
 				
 				return sendJson(ws, client.game.handleGuess(client.playerId, message.guess));
 			}
+			
+			case "ping":
+				return;
 			
 			default:
 				return sendJson(ws, error("Invalid action"));
