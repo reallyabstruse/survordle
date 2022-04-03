@@ -278,7 +278,7 @@ class Game extends React.Component {
 			return;
 		}
 		
-		this.ws = new WebSocket('ws://' + window.location.host);
+		this.ws = new WebSocket('wss://' + window.location.host);
 		
 		this.ws.addEventListener('open', e => {
 		  this.ws.addEventListener('message', e => {
