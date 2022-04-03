@@ -299,6 +299,14 @@ class Game extends React.Component {
 		  
 		  this.queuedJsonMessages = [];
 		});
+		
+		this.ws.addEventListener('close', e => {
+			if (this.state.gameId && this.state.playerId) {
+				this.sendJson(null);
+			}
+		});
+		
+		this.pingInterval = setInterval(this.sendPing, 10000);
 	} else if (obj) {
 		this.ws.send(JSON.stringify(obj));
 	}
@@ -317,6 +325,16 @@ class Game extends React.Component {
 			  solution: this.getWord()
 		  });
 	  } 
+  }
+  
+  sendPing() {
+	  if (this.state.gameId && this.state.playerId && this.ws && this.ws.readyState === WebSocket.OPEN) {
+		  this.sendJson({
+			  action: "ping"
+		  });
+	  } else {
+		  clearInterval(this.pingInterval);
+	  }
   }
   
   handleServerResponse(data) {
