@@ -83,7 +83,7 @@ class Game extends React.Component {
 	  playerId: localStorage.getItem("playerId")
     };
 	
-	if (this.state.duel && this.state.gameId && this.state.playerId) {
+	if (this.state.gameId && this.state.playerId) {
 		this.sendJson(null);
 	}
 
@@ -346,7 +346,7 @@ class Game extends React.Component {
       return;
     }
     
-    if (this.duel) {
+    if (this.state.duel) {
       return this.sendJson({
 		  action: "guess",
 		  guess: guess
