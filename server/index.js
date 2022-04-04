@@ -289,7 +289,7 @@ class Game {
 		let opponentGuessColors;
 		
 		for (const [id, playerData] of this.players) {
-			if (id !== fromPlayerId) {
+			if (id !== playerId) {
 				opponentGuessColors = this.players.get(id).guessColors;
 				break;
 			}
@@ -300,6 +300,7 @@ class Game {
 			guesses: playerData.guesses,
 			wordRemove: this.wordRemove,
 			hardMode: this.hardMode,
+			amtGuesses: this.amtGuesses,
 			gameId: this.gameId,
 			playerId: playerId,
 			opponentGuessColors: opponentGuessColors
