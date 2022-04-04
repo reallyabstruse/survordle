@@ -39,17 +39,9 @@ body {
   height: 100%;
 }
 
-.guessrow {
-  height: calc(100% / 6);
-  width: auto;
-  aspect-ratio: 5 / 1;
-}
-
 .cell {
-  height: 90%;
-  width: 18%;
-  margin-right: 1%;
-  margin-left: 1%;
+  height: var(--cell-dimension);
+  width: var(--cell-dimension);
 }
 
 .button:hover {
@@ -107,11 +99,10 @@ body {
 
 .guessesinner {
   position: relative;
-  width: max-content;
 }
 
 .guessescontainer {
-  height: 6vh;
+  width: 100%;
   overflow: hidden;
   display: flex;
   justify-content: center;
@@ -222,11 +213,6 @@ header {
   font-family: Tahoma, sans-serif;
 }
 
-.settingsbutton:hover {
-  cursor: pointer;
-  text-decoration: underline;
-}
-
 .setting {
   display: flex;
   flex-direction: row;
@@ -234,6 +220,10 @@ header {
   justify-content: space-between;
   margin-bottom: 1vh;
   text-size: 100vmin;
+}
+
+.gameover-message {
+	color: var(--secondary-color);
 }
 
 .slider {
@@ -273,6 +263,7 @@ input:checked + .slider:before {
 
 .removewords {
   animation: removal 1s;
+  top: calc(100% / 6 * var(--words-to-remove) * -1);
 }
 
 @keyframes removal {

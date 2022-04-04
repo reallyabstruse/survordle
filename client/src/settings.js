@@ -91,7 +91,8 @@ class Settings extends React.Component {
             updateHandler={this.props.updateSetting}
           />
 		  
-		  <button onClick={this.props.startGame}>Start Game</button>{this.props.wait ? "Please wait..." : null}
+		  <button onClick={() => this.props.startGame(false)}>Start Solo Game</button>
+		  <button onClick={() => this.props.startGame(true)}>Start Duel Game</button>{this.props.wait ? "Please wait..." : null}
         </div>
       </>
     );
