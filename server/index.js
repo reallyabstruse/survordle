@@ -131,6 +131,8 @@ class Game {
 				playerData.guesses.push("");
 				playerData.guessColors.push(guessColors);
 				
+				this.sendToOpponents(id, { opponentColors: guessColors });
+				
 				this.checkHasLost(id);
 				
 				sendJson(playerData.socket, {

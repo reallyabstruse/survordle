@@ -39,6 +39,9 @@ body {
   height: var(--cell-dimension);
   width: var(--cell-dimension);
   font-size: var(--cell-dimension);
+}
+
+.cell .letter {
   z-index: 2;
   position: relative;
 }
@@ -261,13 +264,14 @@ input:checked + .slider:before {
 }
 
 .opponent-color {
-	width: 35%;
-	height: 35%;
+	width: 25%;
+	height: 25%;
 	position: absolute;
 	right: 0;
 	bottom: 0;
 	border-radius: 25%;
 	z-index: 1;
+	border: 1px solid white;
 }
 
 .removewords {
