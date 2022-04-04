@@ -53,12 +53,12 @@ class PlayerData {
 }
 
 class Game {
-	constructor(wordRemove, hardMode, guessLimit, ws) {
+	constructor(wordRemove, hardMode, amtGuesses, ws) {
 		this.wordRemove = wordRemove;
 		this.hardMode = !!hardMode;
 		this.players = new Map([[makeId(), new PlayerData(ws)]]);
 		this.wordLength = 5;
-		this.guessLimit = guessLimit;
+		this.amtGuesses = amtGuesses;
 		this.gameId = null;
 	}
 	
@@ -72,7 +72,7 @@ class Game {
 			return error("Invalid word length");
 		}
 		
-		if (playerData.guesses.length >= this.guessLimit) {
+		if (playerData.guesses.length >= this.amtGuesses) {
 			return error("No guesses left");
 		}
 		
@@ -156,7 +156,7 @@ class Game {
 	
 	checkHasLost(playerId) {
 		let playerData = this.players.get(playerId);
-		if (playerData.guesses.length === this.guessLimit) {
+		if (playerData.guesses.length === this.amtGuesses) {
 			this.removePlayer(playerId);
 			sendJson(playerData.socket, {
 				gameover: true,
@@ -365,7 +365,7 @@ wss.on('connection', (ws) => {
 				clientQueue.delete(ws);
 				
 				for (let [cws, game] of clientQueue.entries()) {
-					if (game.hardMode === !!message.hardMode && game.wordRemove === message.wordRemove && game.amtGuesses == message.amtGuesses) {
+					if (game.hardMode === !!message.hardMode && game.wordRemove === message.wordRemove && game.amtGuesses === message.amtGuesses) {
 						let gameId = makeId();
 						clientQueue.delete(cws);
 						games.set(gameId, game);
