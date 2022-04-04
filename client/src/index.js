@@ -25,6 +25,7 @@ class GuessCell extends React.Component {
         <svg viewBox="0 0 10 14">
           <text x="0" y="12" fontFamily="'Lucida Console', monospace">{this.props.value}</text>
         </svg>
+		{this.props.opponentGuessColor && <div className={classNames("opponent-color", this.props.opponentGuessColor)}></div>}
       </div>
     );
   }
@@ -42,6 +43,7 @@ class GuessRow extends React.Component {
           key={i}
           value={this.props.val.charAt(i)}
           color={this.props.colors[i]}
+		  opponentGuessColor={this.props.opponentGuessColors ? this.props.opponentGuessColors[i] : null}
         />
       );
     }
@@ -80,7 +82,8 @@ class Game extends React.Component {
       settings: this.loadSettings(),
 	  showSettings: true,
 	  gameId: localStorage.getItem("gameId"),
-	  playerId: localStorage.getItem("playerId")
+	  playerId: localStorage.getItem("playerId"),
+	  opponentGuessColors: []
     };
 	
 	if (this.state.gameId && this.state.playerId) {
@@ -141,7 +144,11 @@ class Game extends React.Component {
 			return;
 		}
 		
-		this.ws = new WebSocket((window.location.host.indexOf("localhost") >= 0 ? 'ws://' : 'wss://') + window.location.host);
+		if (window.location.host.indexOf("localhost") >= 0) {
+			this.ws = new WebSocket('ws://localhost:3001');
+		} else {
+			this.ws = new WebSocket('wss://' + window.location.host);
+		}
 		
 		this.ws.addEventListener('open', e => {
 		  this.ws.addEventListener('message', e => {
@@ -217,7 +224,7 @@ class Game extends React.Component {
 		  this.showSuccess(data.success);
 	  }
 	  
-	  let passOnParameters = ["hardMode", "wordRemove", "wordsToRemove", "wait"];
+	  let passOnParameters = ["hardMode", "wordRemove", "wordsToRemove", "wait", "opponentGuessColors"];
 	  
 	  for (let p of passOnParameters) {
 		  if (p in data) {
@@ -237,9 +244,7 @@ class Game extends React.Component {
 		  for (let i = 0; i < this.state.wordLength; i++) {
 			  this.addKeyboardColor(data.guessResult.word[i], data.guessResult.colors[i]);
 		  }
-	  }
-	  
-	  if (data.guesses && data.guessColors) {
+	  } else if (data.guesses && data.guessColors) {
 		  this.setState({
 			  guessColors: [...this.state.guessColors.slice(0, data.wordsToRemove || 0),
 							...data.guessColors],
@@ -247,6 +252,13 @@ class Game extends React.Component {
 			  curguess: "",
 			  guesses: [...this.state.guesses.slice(0, data.wordsToRemove || 0),
 						...data.guesses]
+		  });
+	  }
+	  
+	  if (data.opponentColors) {
+		  this.setState({
+			  opponentGuessColors: [...this.state.opponentGuessColors,
+									data.opponentColors]
 		  });
 	  }
 
@@ -607,6 +619,7 @@ class Game extends React.Component {
           solution={this.state.solution}
           colors={this.state.guessColors[i]}
 		  wordLength={this.state.wordLength}
+		  opponentGuessColors={this.state.opponentGuessColors[i]}
         />
       );
     }
@@ -615,10 +628,10 @@ class Game extends React.Component {
       // current guess
       rows.push(
         <GuessRow
-          type="cur"
           val={this.state.curguess}
           key={this.state.guesses.length}
 		  wordLength={this.state.wordLength}
+		  opponentGuessColors={this.state.opponentGuessColors[this.state.guesses.length]}
         />
       );
 
@@ -630,10 +643,10 @@ class Game extends React.Component {
       ) {
         rows.push(
 			<GuessRow 
-				type="future" 
 				val="" 
 				key={i} 
 				wordLength={this.state.wordLength}
+				opponentGuessColors={this.state.opponentGuessColors[i]}
 			/>
 		);
       }

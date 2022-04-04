@@ -96,6 +96,8 @@ class Game {
 					  return this.getColors(playerData.word, item);
 					});
 			
+			this.sendToOpponents(playerId, { opponentGuessColors: playerData.guessColors } );
+			
 			return {
 				success: "Correct!", 
 				wordsToRemove: wordsToRemove,
@@ -109,6 +111,8 @@ class Game {
 			playerData.guessColors.push(guessColors);
 
 			this.checkHasLost(playerId);
+			
+			this.sendToOpponents(playerId, { opponentColors: guessColors } );
 			
 			return {
 				guessResult: {
@@ -135,6 +139,15 @@ class Game {
 						colors: guessColors
 					}
 				});
+			}
+		}
+	}
+	
+	// Send own guess colors to opponents
+	sendToOpponents(fromPlayerId, obj) {
+		for (const [id, playerData] of this.players) {
+			if (id !== fromPlayerId) {
+				sendJson(playerData.socket, obj);
 			}
 		}
 	}
