@@ -84,9 +84,7 @@ class Game extends React.Component {
 	  opponentGuessColors: []
     };
 	
-	if (this.state.gameId && this.state.playerId) {
-		this.sendJson(null);
-	}
+	this.sendJson(null);
 
     this.restart = this.restart.bind(this);
     this.hideMessage = this.hideMessage.bind(this);
@@ -279,7 +277,8 @@ class Game extends React.Component {
 	setGameAndPlayerId(gameId, playerId) {
 		this.setState({
 			gameId: gameId,
-			playerId: playerId
+			playerId: playerId,
+			duel: true
 		});
 		
 		if (gameId && playerId) {

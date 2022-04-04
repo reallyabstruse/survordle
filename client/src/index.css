@@ -265,12 +265,12 @@ input:checked + .slider:before {
 }
 
 .opponent-color {
-	width: 25%;
-	height: 25%;
+	width: 20%;
+	height: 20%;
 	position: absolute;
-	right: 0;
-	bottom: 0;
-	border-radius: 25%;
+	right: 5%;
+	bottom: 5%;
+	border-radius: 50%;
 	z-index: 1;
 	border: 1px solid white;
 }
