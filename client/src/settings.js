@@ -63,6 +63,23 @@ class Setting extends React.Component {
 }
 
 class Settings extends React.Component {
+  static loadSettings() {
+    let settings = JSON.parse(localStorage.getItem("settings"));
+    if (!settings) {
+      settings = {};
+    }
+
+    if (!Number.isInteger(settings.wordRemove) || settings.wordRemove < 1) {
+      settings.wordRemove = 2;
+    }
+	
+	if (!Number.isInteger(settings.amtGuesses) || settings.amtGuesses < 6) {
+      settings.amtGuesses = 6;
+    }
+	
+    return settings;
+  }
+	
   render() {
 	let messageDiv = this.props.gameoverMessage ? <div className="gameover-message">{this.props.gameoverMessage}</div> : null;
 	  
@@ -76,6 +93,13 @@ class Settings extends React.Component {
             name="wordRemove"
             options={[1, 2, 3]}
             value={this.props.settings["wordRemove"]}
+            updateHandler={this.props.updateSetting}
+          />
+		  <Setting
+            title="Available guesses"
+            name="amtGuesses"
+            options={[6, 8, 10]}
+            value={this.props.settings["amtGuesses"]}
             updateHandler={this.props.updateSetting}
           />
           <Setting

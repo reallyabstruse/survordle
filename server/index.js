@@ -53,12 +53,12 @@ class PlayerData {
 }
 
 class Game {
-	constructor(wordRemove, hardMode, ws) {
+	constructor(wordRemove, hardMode, guessLimit, ws) {
 		this.wordRemove = wordRemove;
 		this.hardMode = !!hardMode;
 		this.players = new Map([[makeId(), new PlayerData(ws)]]);
 		this.wordLength = 5;
-		this.guessLimit = 6;
+		this.guessLimit = guessLimit;
 		this.gameId = null;
 	}
 	
@@ -285,13 +285,24 @@ class Game {
 	
 	getPlayerGameData(playerId) {
 		let playerData = this.players.get(playerId);
+		
+		let opponentGuessColors;
+		
+		for (const [id, playerData] of this.players) {
+			if (id !== fromPlayerId) {
+				opponentGuessColors = this.players.get(id).guessColors;
+				break;
+			}
+		}
+		
 		return {
 			guessColors: playerData.guessColors,
 			guesses: playerData.guesses,
 			wordRemove: this.wordRemove,
 			hardMode: this.hardMode,
 			gameId: this.gameId,
-			playerId: playerId
+			playerId: playerId,
+			opponentGuessColors: opponentGuessColors
 		};
 	}
 }
@@ -342,14 +353,19 @@ wss.on('connection', (ws) => {
 					return sendJson(ws, error("Attempted to join game while already in game"));
 				}
 				
-				if (message.hardMode === undefined || !Number.isInteger(message.wordRemove) || message.wordRemove < 1 || message.wordRemove > 3) {
+				if (message.hardMode === undefined || 
+					!Number.isInteger(message.wordRemove) || 
+					message.wordRemove < 1 || 
+					message.wordRemove > 3 ||
+					!Number.isInteger(message.amtGuesses ||
+					message.amtGuesses < 6)) {
 					return sendJson(ws, error("Settings not provided for join"));
 				}
 				
 				clientQueue.delete(ws);
 				
 				for (let [cws, game] of clientQueue.entries()) {
-					if (game.hardMode === !!message.hardMode && game.wordRemove === message.wordRemove) {
+					if (game.hardMode === !!message.hardMode && game.wordRemove === message.wordRemove && game.amtGuesses == message.amtGuesses) {
 						let gameId = makeId();
 						clientQueue.delete(cws);
 						games.set(gameId, game);
@@ -360,7 +376,7 @@ wss.on('connection', (ws) => {
 					}
 				}
 				
-				clientQueue.set(ws, new Game(message.wordRemove, message.hardMode, ws));
+				clientQueue.set(ws, new Game(message.wordRemove, message.hardMode, message.amtGuesses, ws));
 				return sendJson(ws, {wait: true});
 			}
 			
@@ -394,9 +410,5 @@ wss.on('connection', (ws) => {
 });
 
 app.use(express.static(path.resolve(__dirname, "../client/build/")));
-
-app.get("/duel", (req, res) => {
-	res.sendFile(path.resolve(__dirname, "../client/build/index.html"));
-});
 
 server.listen(PORT);

@@ -67,8 +67,8 @@ class Game extends React.Component {
 
     this.state = {
       wordLength: 5,
+	  amtGuesses: 6,
       guesses: [],
-      maxguesses: 6,
       curguess: "",
       acceptedLetters: /^[A-Z]$/,
       keyboardColors: {},
@@ -77,7 +77,7 @@ class Game extends React.Component {
       wordsRemoved: 0,
       wordsToRemove: 0,
       stats: this.loadStats(),
-      settings: this.loadSettings(),
+      settings: Settings.loadSettings(),
 	  showSettings: true,
 	  gameId: localStorage.getItem("gameId"),
 	  playerId: localStorage.getItem("playerId"),
@@ -86,7 +86,6 @@ class Game extends React.Component {
 	
 	this.sendJson(null);
 
-    this.restart = this.restart.bind(this);
     this.hideMessage = this.hideMessage.bind(this);
     this.addLetter = this.addLetter.bind(this);
     this.removeLetter = this.removeLetter.bind(this);
@@ -124,7 +123,7 @@ class Game extends React.Component {
   
   setCellDimension() {
 	  this.setState({
-		  cellDimension: Math.min(this.refGuessesContainer.current.offsetWidth / 5, this.refGuessesContainer.current.offsetHeight / 6)
+		  cellDimension: Math.min(this.refGuessesContainer.current.offsetWidth / this.state.wordLength, this.refGuessesContainer.current.offsetHeight / this.state.amtGuesses)
 	  });
   }
   
@@ -164,6 +163,7 @@ class Game extends React.Component {
 		  }
 		  
 		  this.queuedJsonMessages = [];
+		  this.pingInterval = setInterval(this.sendPing, 10000);
 		});
 		
 		this.ws.addEventListener('close', e => {
@@ -174,8 +174,7 @@ class Game extends React.Component {
 				this.sendJson(null);
 			}
 		});
-		
-		this.pingInterval = setInterval(this.sendPing, 10000);
+
 	} else if (obj) {
 		this.ws.send(JSON.stringify(obj));
 	}
@@ -186,15 +185,17 @@ class Game extends React.Component {
 		this.sendJson({
 			  action: "join",
 			  wordRemove: this.state.settings.wordRemove,
-			  hardMode: !!this.state.settings.hardMode
+			  hardMode: !!this.state.settings.hardMode,
+			  amtGuesses: this.state.settings.amtGuesses
 			  });
 	  } else {
 		  this.setState({
 			  showSettings: false,
 			  solution: this.getWord(),
 			  gameId: null,
-			  playerId: null
-		  });
+			  playerId: null,
+			  ...this.state.settings
+		  }, this.setCellDimension);
 		  
 		  if (this.ws) {
 			  this.ws.close();
@@ -220,7 +221,7 @@ class Game extends React.Component {
 		  this.showSuccess(data.success);
 	  }
 	  
-	  let passOnParameters = ["hardMode", "wordRemove", "wordsToRemove", "wait", "opponentGuessColors"];
+	  let passOnParameters = ["hardMode", "wordRemove", "wordsToRemove", "amtGuesses", "wait", "opponentGuessColors"];
 	  
 	  for (let p of passOnParameters) {
 		  if (p in data) {
@@ -269,7 +270,7 @@ class Game extends React.Component {
 		  this.setState({
 			  showSettings: false,
 			  wait: false
-			});
+			}, this.setCellDimension);
 		  this.setGameAndPlayerId(data.gameId, data.playerId);
 	  }
   }
@@ -308,7 +309,7 @@ class Game extends React.Component {
   }
 
   hardModeCheck(guess) {
-    if (!this.state.settings.hardMode) {
+    if (!this.state.hardMode) {
         return true;
     }
     for (let j in this.state.guessColors) {
@@ -367,7 +368,7 @@ class Game extends React.Component {
 
       // Remove some guesses, but always leave the last guess
       let wordsToRemove = Math.min(
-        this.state.settings.wordRemove,
+        this.state.wordRemove,
         this.state.guesses.length
       );
 
@@ -402,7 +403,7 @@ class Game extends React.Component {
         guessColors: [...this.state.guessColors, this.getColors(guess)]
       });
 
-      if (newGuesses.length >= this.state.maxguesses) {
+      if (newGuesses.length >= this.state.amtGuesses) {
         this.showError("Game Over. Solution was " + this.state.solution,
           true
         );
@@ -416,18 +417,6 @@ class Game extends React.Component {
     this.setState({ settings: { ...this.state.settings, [name]: val } }, () => {
       localStorage.setItem("settings", JSON.stringify(this.state.settings));
     });
-  }
-
-  loadSettings() {
-    let settings = JSON.parse(localStorage.getItem("settings"));
-    if (!settings) {
-      settings = {};
-    }
-
-    if (!Number.isInteger(settings.wordRemove) || settings.wordRemove < 1) {
-      settings.wordRemove = 2;
-    }
-    return settings;
   }
 
   loadStats() {
@@ -552,28 +541,6 @@ class Game extends React.Component {
     });
   }
 
-  restart() {
-    this.setState({
-      curguess: "",
-      guesses: [],
-      score: 0,
-      maxguesses: 6,
-      solution: this.getWord(),
-      keyboardColors: {},
-      guessColors: [],
-      wordsRemoved: 0,
-      wordsToRemove: 0,
-      gameover: false,
-      showmessage: false,
-	  showSettings: true
-    });
-
-    if (this.messageHideId) {
-      clearTimeout(this.messageHideId);
-      this.messageHideId = 0;
-    }
-  }
-
   showMessage(color, text, infinite = false) {
     this.setState({
       messagecolor: color,
@@ -621,7 +588,7 @@ class Game extends React.Component {
       );
     }
 
-    if (this.state.guesses.length < this.state.maxguesses + this.state.wordsToRemove) {
+    if (this.state.guesses.length < this.state.amtGuesses + this.state.wordsToRemove) {
       // current guess
       rows.push(
         <GuessRow
@@ -635,7 +602,7 @@ class Game extends React.Component {
       // future guesses
       for (
         let i = this.state.guesses.length + 1;
-        i < this.state.maxguesses + this.state.wordsToRemove;
+        i < this.state.amtGuesses + this.state.wordsToRemove;
         i++
       ) {
         rows.push(
@@ -659,7 +626,7 @@ class Game extends React.Component {
 					  maximumFractionDigits: 2
 					})}
 				</div>
-				<div className="headertitle" onClick={this.restart}>
+				<div className="headertitle">
 					Survordle
 				</div>
 				<div className="headerright"></div>
@@ -688,7 +655,8 @@ class Game extends React.Component {
 				  className={classNames("guessesinner", { removewords: this.state.wordsToRemove })}
 				  style={{
 					"--words-to-remove": this.state.wordsToRemove,
-					"--cell-dimension": this.state.cellDimension + "px"
+					"--cell-dimension": this.state.cellDimension + "px",
+					"--amt-guesses": this.state.amtGuesses
 				  }}
 				  onAnimationEnd={this.finishWordRemoval}
 				>

@@ -277,7 +277,7 @@ input:checked + .slider:before {
 
 .removewords {
   animation: removal 1s;
-  top: calc(100% / 6 * var(--words-to-remove) * -1);
+  top: calc(100% / var(--amt-guesses) * var(--words-to-remove) * -1);
 }
 
 @keyframes removal {
@@ -285,6 +285,6 @@ input:checked + .slider:before {
     top: 0;
   }
   100% {
-    top: calc(100% / 6 * var(--words-to-remove) * -1);
+    top: calc(100% / var(--amt-guesses) * var(--words-to-remove) * -1);
   }
 }
