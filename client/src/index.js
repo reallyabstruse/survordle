@@ -413,11 +413,15 @@ class Game extends React.Component {
     }
   }
 
-  updateSetting(name, val) {
-    this.setState({ settings: { ...this.state.settings, [name]: val } }, () => {
-      localStorage.setItem("settings", JSON.stringify(this.state.settings));
-    });
-  }
+	updateSetting(name, val) {
+		if (typeof val === "string") {
+			val = parseInt(val);
+		}
+
+		this.setState({ settings: { ...this.state.settings, [name]: val } }, () => {
+			localStorage.setItem("settings", JSON.stringify(this.state.settings));
+		});
+	}
 
   loadStats() {
     let stats = JSON.parse(localStorage.getItem("stats"));
