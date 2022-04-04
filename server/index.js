@@ -357,8 +357,8 @@ wss.on('connection', (ws) => {
 					!Number.isInteger(message.wordRemove) || 
 					message.wordRemove < 1 || 
 					message.wordRemove > 3 ||
-					!Number.isInteger(message.amtGuesses ||
-					message.amtGuesses < 6)) {
+					!Number.isInteger(message.amtGuesses) ||
+					message.amtGuesses < 6) {
 					return sendJson(ws, error("Settings not provided for join"));
 				}
 				
