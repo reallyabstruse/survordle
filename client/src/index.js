@@ -22,9 +22,7 @@ class GuessCell extends React.Component {
   render() {
     return (
       <div className={classNames("cell", this.props.color)}>
-        <svg viewBox="0 0 10 14">
-          <text x="0" y="12" fontFamily="'Lucida Console', monospace">{this.props.value}</text>
-        </svg>
+        {this.props.value}
 		{this.props.opponentGuessColor && <div className={classNames("opponent-color", this.props.opponentGuessColor)}></div>}
       </div>
     );
@@ -505,7 +503,7 @@ class Game extends React.Component {
       for (let i = 0; i < arr_guess.length; i++) {
         if (arr_guess[i]) {
           this.addKeyboardColor(arr_guess[i], BLACK);
-          colors[i] = WHITE;
+          colors[i] = BLACK;
         }
       }
     }
