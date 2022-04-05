@@ -128,11 +128,6 @@ body {
   transition: 1s;
 }
 
-.gameover-message {
-	color: white;
-	font-size: 200%;
-}
-
 .popup {
   position: absolute;
   top: 10%;
@@ -254,6 +249,9 @@ header {
 
 .gameover-message {
 	color: var(--secondary-color);
+	font-size: 6vmin;
+	border-bottom: 1px solid;
+	margin-bottom: 1vmin;
 }
 
 .slider {
