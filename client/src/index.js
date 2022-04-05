@@ -71,7 +71,6 @@ class Game extends React.Component {
       keyboardColors: {},
       guessColors: [],
       score: 0,
-      wordsRemoved: 0,
       wordsToRemove: 0,
       stats: Settings.loadStats(),
       settings: Settings.loadSettings(),
@@ -80,7 +79,7 @@ class Game extends React.Component {
 	  playerId: localStorage.getItem("playerId"),
 	  opponentGuessColors: [],
 	  timePassed: 0,
-	  timerStartedAt: 0
+	  lobby: []
     };
 	
 	this.sendJson(null);
@@ -93,6 +92,7 @@ class Game extends React.Component {
     this.updateSetting = this.updateSetting.bind(this);
     this.finishWordRemoval = this.finishWordRemoval.bind(this);
 	this.sendPing = this.sendPing.bind(this);
+	this.joinGame = this.joinGame.bind(this);
   }
 
   componentDidMount() {
@@ -179,6 +179,16 @@ class Game extends React.Component {
 	}
   }
   
+  joinGame(settingsArr) {
+	  this.sendJson({
+		  action: "join",
+		  wordRemove: settingsArr[0],
+		  amtGuesses: settingsArr[1],
+		  timeLimit: settingsArr[2],
+		  hardMode: settingsArr[3],
+		  });
+  }
+  
   startGame(duel=false) {
 	if (duel) {
 		this.sendJson({
@@ -223,7 +233,7 @@ class Game extends React.Component {
 		  this.showSuccess(data.success);
 	  }
 	  
-	  let passOnParameters = ["hardMode", "wordRemove", "wordsToRemove", "amtGuesses", "timeLimit", "wait", "opponentGuessColors"];
+	  let passOnParameters = ["hardMode", "wordRemove", "wordsToRemove", "amtGuesses", "timeLimit", "wait", "opponentGuessColors", "lobby"];
 	  
 	  for (let p of passOnParameters) {
 		  if (p in data) {
@@ -557,7 +567,6 @@ class Game extends React.Component {
 	  this.refTimer.current.style.animation = "none";
 	  this.refTimer.current.offsetHeight; /* eslint-disable-line */ // trigger reflow
 	  this.refTimer.current.style.animation = null;
-	  this.setState({timerStartedAt: new Date().getTime()});
   }
   
   timerEnded() {
@@ -605,6 +614,8 @@ class Game extends React.Component {
 			  settings={this.state.settings}
 			  gameoverMessage={this.state.gameoverMessage}
 			  wait={this.state.wait}
+			  lobby={this.state.lobby}
+			  joinGame={this.joinGame}
 					  />
 					) : null}
 
@@ -633,7 +644,7 @@ class Game extends React.Component {
 				className={classNames("timer", {paused: this.state.showSettings})}
 				style={{
 					"--duration": this.state.timeLimit, 
-					"--time-passed":  ((this.state.timerStartedAt - new Date().getTime()) / 1000 - this.state.timePassed)
+					"--time-passed":  this.state.timePassed
 					}}
 				onAnimationEnd={() => this.timerEnded()}
 			></div>

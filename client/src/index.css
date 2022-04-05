@@ -164,6 +164,19 @@ body {
   padding: var(--cell-size);
 }
 
+.popup table {
+	width: 100%;
+}
+
+.popup th {
+	text-align: left;
+}
+
+.popup tbody tr:hover {
+	cursor: pointer;
+	background-color: #9090ff;
+}
+
 .overlay {
   position: fixed;
   width: 100%;
@@ -290,7 +303,7 @@ input:checked + .slider:before {
 
 .timer {
 	height: 1vh;
-	animation: runtimer calc(1s * var(--duration)) linear calc(1s * var(--time-passed)) forwards;
+	animation: runtimer calc(1s * var(--duration)) linear forwards;
 	transform-origin: left center;
 }
 

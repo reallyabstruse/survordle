@@ -22,6 +22,8 @@ var games = new Map();
 var clientQueue = new Map();
 var clients = new Map();
 
+var clientsInLobby = new Set();
+
 function sendJson(ws, obj) {
 	if (ws) {
 		ws.send(JSON.stringify(obj));
@@ -44,6 +46,22 @@ function makeId() {
 	return id;
 }
 
+function refreshLobbies() {
+	for (let clientSocket of clientsInLobby) {
+		refreshLobby(clientSocket);
+	}
+}
+
+function refreshLobby(clientSocket) {
+	let lobby = [];
+	for (let [hostSocket, gameData] of clientQueue) {
+		if (hostSocket != clientSocket) {
+			lobby.push([gameData.wordRemove, gameData.amtGuesses, gameData.timeLimit, gameData.hardMode]);
+		}
+	}
+	sendJson(clientSocket, {lobby: lobby});
+}
+
 
 class PlayerData {
 	constructor(socket) {
@@ -63,10 +81,10 @@ class PlayerData {
 		this.timerStartedAt = (new Date()).getTime();
 		this.timer = setInterval(() => {
 			func();
-			sendJson(this.socket, {timePassed: 0});
+			sendJson(this.socket, {timePassed: 0, a: 1});
 			this.timerStartedAt += this.timeLimit * 1000;
 		}, timeLimit*1000);
-		sendJson(this.socket, {timePassed: 0});
+		sendJson(this.socket, {timePassed: 0, a: 2});
 	}
 	
 	timePassed() {
@@ -272,14 +290,17 @@ class Game {
 	
 	removePlayer(playerId) {
 		let playerData = this.players.get(playerId);
+		
 		let client = clients.get(playerData.socket);
 		if (client) {
 			client.game = null;
 			client.playerId = null;
+			clientsInLobby.add(playerData.socket);
+			refreshLobby(playerData.socket);
 		}
 		
 		this.players.delete(playerId);
-		
+		clearInterval(playerData.timer);
 		
 		if (this.players.size == 1) {
 			const [winnerPlayerId, winnerPlayerData] = this.players.entries().next().value;
@@ -301,6 +322,9 @@ class Game {
 		}
 		
 		for (const [id, playerData] of this.players) {
+			clientQueue.delete(playerData.socket);
+			clientsInLobby.delete(playerData.socket);
+			
 			let client = clients.get(playerData.socket);
 			playerData.word = wordlist.getSolutionWord();
 			if (client) {
@@ -310,6 +334,8 @@ class Game {
 			playerData.startTimer(this.timeLimit, () => this.sendPenalty(id));
 			sendJson(playerData.socket, this.getPlayerGameData(id));
 		}
+		
+		refreshLobbies();
 	}
 	
 	updateClients() {
@@ -344,7 +370,7 @@ class Game {
 			gameId: this.gameId,
 			playerId: playerId,
 			opponentGuessColors: opponentGuessColors,
-			timeLimit: this.timeLimit,
+			timeLimit: this.timeLimit - 1, // Run client timer 1 second faster in case of lag to reduce possibility of timer running out on server before client
 			timePassed: playerData.timePassed()
 		};
 	}
@@ -357,6 +383,9 @@ wss.on('connection', (ws) => {
 	};
 	
 	clients.set(ws, client);
+	clientsInLobby.add(ws);
+	
+	refreshLobby(ws);
 	
     ws.on('message', (messageAsString) => {
 		const message = JSON.parse(messageAsString);
@@ -387,6 +416,9 @@ wss.on('connection', (ws) => {
 				client.game = game
 				client.playerId = message.playerId;
 				
+				clientsInLobby.delete(ws);
+				clientQueue.delete(ws);
+				
 				return sendJson(ws, client.game.getPlayerGameData(client.playerId));
 			}
 				
@@ -396,8 +428,7 @@ wss.on('connection', (ws) => {
 					return sendJson(ws, error("Attempted to join game while already in game"));
 				}
 				
-				if (message.hardMode === undefined || 
-					!Number.isInteger(message.wordRemove) || 
+				if (!Number.isInteger(message.wordRemove) || 
 					message.wordRemove < 1 || 
 					message.wordRemove > 3 ||
 					!Number.isInteger(message.amtGuesses) ||
@@ -407,12 +438,9 @@ wss.on('connection', (ws) => {
 					return sendJson(ws, error("Settings not provided for join"));
 				}
 				
-				clientQueue.delete(ws);
-				
 				for (let [cws, game] of clientQueue.entries()) {
 					if (game.hardMode === message.hardMode && game.wordRemove === message.wordRemove && game.amtGuesses === message.amtGuesses && game.timeLimit === message.timeLimit) {
 						let gameId = makeId();
-						clientQueue.delete(cws);
 						games.set(gameId, game);
 						
 						game.addPlayer(ws);
@@ -422,6 +450,7 @@ wss.on('connection', (ws) => {
 				}
 				
 				clientQueue.set(ws, new Game(message.wordRemove, message.hardMode, message.amtGuesses, message.timeLimit, ws));
+				refreshLobbies();
 				return sendJson(ws, {wait: true});
 			}
 			
@@ -451,6 +480,9 @@ wss.on('connection', (ws) => {
 		}
 		clientQueue.delete(ws);
 		clients.delete(ws);
+		clientsInLobby.delete(ws);
+		
+		refreshLobbies();
 	});
 });
 

@@ -105,6 +105,13 @@ class Settings extends React.Component {
     return stats;
   }
 
+  valueToString(val) {
+	  if (Number.isInteger(val)) {
+		  return val;
+	  }
+	  
+	  return val ? "On" : "Off";
+  }
 	
   render() {
 	let messageDiv = this.props.gameoverMessage ? <div className="gameover-message">{this.props.gameoverMessage}</div> : null;
@@ -113,44 +120,62 @@ class Settings extends React.Component {
       <>
         <div className="overlay"></div>
         <div className="popup">
-		{messageDiv}
-          <Setting
-            title="Words to remove on correct guess"
-            name="wordRemove"
-            options={[1, 2, 3]}
-            value={this.props.settings["wordRemove"]}
-            updateHandler={this.props.updateSetting}
-          />
-		  <Setting
-            title="Available guesses"
-            name="amtGuesses"
-            options={[6, 8, 10]}
-            value={this.props.settings["amtGuesses"]}
-            updateHandler={this.props.updateSetting}
-          />
-		  <Setting
-            title="Time limit to make guess"
-            name="timeLimit"
-            options={[0, 10, 30, 60, 120]}
-			optionTitles={["No limit", "10 seconds", "30 seconds", "1 minute", "2 minutes"]}
-            value={this.props.settings["timeLimit"]}
-            updateHandler={this.props.updateSetting}
-          />
-          <Setting
-            title="Hard mode"
-            name="hardMode"
-            value={this.props.settings["hardMode"]}
-            updateHandler={this.props.updateSetting}
-          />
-          <Setting
-            title="Dark mode"
-            name="dark"
-            value={this.props.settings["dark"]}
-            updateHandler={this.props.updateSetting}
-          />
-		  
-		  <button onClick={() => this.props.startGame(false)}>Start Solo Game</button>
-		  <button onClick={() => this.props.startGame(true)}>Start Duel Game</button>{this.props.wait ? "Please wait..." : null}
+			{messageDiv}
+			<div>
+			  <Setting
+				title="Words to remove on correct guess"
+				name="wordRemove"
+				options={[1, 2, 3]}
+				value={this.props.settings["wordRemove"]}
+				updateHandler={this.props.updateSetting}
+			  />
+			  <Setting
+				title="Available guesses"
+				name="amtGuesses"
+				options={[6, 8, 10]}
+				value={this.props.settings["amtGuesses"]}
+				updateHandler={this.props.updateSetting}
+			  />
+			  <Setting
+				title="Time limit to make guess"
+				name="timeLimit"
+				options={[0, 10, 30, 60, 120]}
+				optionTitles={["No limit", "10 seconds", "30 seconds", "1 minute", "2 minutes"]}
+				value={this.props.settings["timeLimit"]}
+				updateHandler={this.props.updateSetting}
+			  />
+			  <Setting
+				title="Hard mode"
+				name="hardMode"
+				value={this.props.settings["hardMode"]}
+				updateHandler={this.props.updateSetting}
+			  />
+			  <Setting
+				title="Dark mode"
+				name="dark"
+				value={this.props.settings["dark"]}
+				updateHandler={this.props.updateSetting}
+			  />
+			  
+			  <button onClick={() => this.props.startGame(false)}>Start Solo Game</button>
+			  <button onClick={() => this.props.startGame(true)}>Start Duel Game</button>{this.props.wait ? "Please wait..." : null}
+		  </div>
+		  <div>
+			Lobby
+			<table>
+				<thead>
+					<tr><th>Word remove</th><th>Guesses</th><th>Time</th><th>Hard mode</th></tr>
+				</thead>
+				<tbody>
+					{this.props.lobby.map((arr, i) => 
+						<tr key={i} onClick={() => this.props.joinGame(arr)}>
+							{arr.map((val, j) => 
+								<td key={j}>{this.valueToString(val)}</td>)}
+						</tr>
+					)}
+				</tbody>
+			</table>
+		  </div>
         </div>
       </>
     );
