@@ -8,7 +8,7 @@ class SettingSelect extends React.Component {
 
 		for (let i in this.props.options) {
 			let val = this.props.options[i];
-		let valTitle = this.props.optionTitles ? this.props.optionTitles[i] : val;
+			let valTitle = this.props.optionTitles ? this.props.optionTitles[i] : val;
 			options.push(
 				<option key={i} value={val}>
 					{valTitle}
@@ -74,12 +74,12 @@ class Settings extends React.Component {
 			settings.wordRemove = 2;
 		}
 	
-	if (!Number.isInteger(settings.amtGuesses) || settings.amtGuesses < 6) {
+		if (!Number.isInteger(settings.amtGuesses) || settings.amtGuesses < 6) {
 			settings.amtGuesses = 6;
 		}
 	
-	if (!Number.isInteger(settings.timeLimit) || settings.timeLimit < 0) {
-			settings.amtGuesses = 60;
+		if (!Number.isInteger(settings.timeLimit) || settings.timeLimit < 0) {
+			settings.timeLimit = 60;
 		}
 	
 		return settings;

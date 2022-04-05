@@ -285,6 +285,8 @@ header {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
+	background-color: var(--secondary-color);
+	color: var(--main-color);
 }
 
 .title {

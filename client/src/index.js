@@ -163,6 +163,7 @@ class Game extends React.Component {
 				opponentGuessColors: [],
 				gameId: null,
 				playerId: null,
+				wait: null,
 				...this.state.settings
 			}, this.setCellDimension);
 
