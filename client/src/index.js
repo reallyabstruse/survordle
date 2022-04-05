@@ -201,6 +201,7 @@ class Game extends React.Component {
 			  solution: wordlist.getSolutionWord(),
 			  guesses: [],
 			  guessColors: [],
+			  keyboardColors: {},
 			  opponentGuessColors: [],
 			  gameId: null,
 			  playerId: null,

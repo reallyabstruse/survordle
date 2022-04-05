@@ -16,9 +16,9 @@ body {
 }
 
 .button {
-  height: var(--cell-size);
-  min-width: var(--cell-size);
-  margin: var(--cell-margin);
+  height: 10vmin;
+  width: 7vmin;
+  margin: 1vmin;
 }
 
 .button,
