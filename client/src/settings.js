@@ -8,9 +8,10 @@ class SettingSelect extends React.Component {
 
     for (let i in this.props.options) {
       let val = this.props.options[i];
+	  let valTitle = this.props.optionTitles ? this.props.optionTitles[i] : val;
       options.push(
         <option key={i} value={val}>
-          {val}
+          {valTitle}
         </option>
       );
     }
@@ -77,8 +78,33 @@ class Settings extends React.Component {
       settings.amtGuesses = 6;
     }
 	
+	if (!Number.isInteger(settings.timeLimit) || settings.timeLimit < 0) {
+      settings.amtGuesses = 60;
+    }
+	
     return settings;
   }
+  
+  static loadStats() {
+    let stats = JSON.parse(localStorage.getItem("stats"));
+
+    if (!stats) {
+      stats = {};
+    }
+
+    if (!Number.isInteger(stats.games)) {
+      stats.games = 0;
+    }
+    if (!Number.isInteger(stats.high)) {
+      stats.high = 0;
+    }
+    if (!Number.isFinite(stats.average)) {
+      stats.average = 0;
+    }
+
+    return stats;
+  }
+
 	
   render() {
 	let messageDiv = this.props.gameoverMessage ? <div className="gameover-message">{this.props.gameoverMessage}</div> : null;
@@ -100,6 +126,14 @@ class Settings extends React.Component {
             name="amtGuesses"
             options={[6, 8, 10]}
             value={this.props.settings["amtGuesses"]}
+            updateHandler={this.props.updateSetting}
+          />
+		  <Setting
+            title="Time limit to make guess"
+            name="timeLimit"
+            options={[0, 10, 30, 60, 120]}
+			optionTitles={["No limit", "10 seconds", "30 seconds", "1 minute", "2 minutes"]}
+            value={this.props.settings["timeLimit"]}
             updateHandler={this.props.updateSetting}
           />
           <Setting

@@ -276,8 +276,7 @@ input:checked + .slider:before {
 }
 
 .removewords {
-  animation: removal 1s;
-  top: calc(100% / var(--amt-guesses) * var(--words-to-remove) * -1);
+  animation: removal 1s forwards;
 }
 
 @keyframes removal {
@@ -287,4 +286,24 @@ input:checked + .slider:before {
   100% {
     top: calc(100% / var(--amt-guesses) * var(--words-to-remove) * -1);
   }
+}
+
+.timer {
+	height: 1vh;
+	animation: runtimer calc(1s * var(--duration)) linear calc(1s * var(--time-passed)) forwards;
+	transform-origin: left center;
+}
+
+.paused {
+	animation-play-state: paused;
+}
+
+@keyframes runtimer {
+	from {
+		background-color: green;
+	}
+	to {
+		background-color: red;
+		transform: scaleX(0);
+	}
 }

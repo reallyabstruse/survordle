@@ -1,6 +1,6 @@
 const PORT = process.env.PORT || 3001;
 
-const wordlist = require("./wordlist.js");
+const wordlist = require("../client/src/wordlist.js");
 
 const WebSocket = require('ws');
 const express = require('express');
@@ -23,7 +23,9 @@ var clientQueue = new Map();
 var clients = new Map();
 
 function sendJson(ws, obj) {
-	ws.send(JSON.stringify(obj));
+	if (ws) {
+		ws.send(JSON.stringify(obj));
+	}
 }
 
 function error(str, gameover=undefined) {
@@ -49,16 +51,40 @@ class PlayerData {
 		this.word = null;
 		this.guesses = [];
 		this.guessColors = [];
+		
+		this.timer = null;
+		this.timerStartedAt = 0;
+		this.timeLimit = 0;
+	}
+	
+	startTimer(timeLimit, func) {
+		this.timeLimit = timeLimit;
+		clearInterval(this.timer);
+		this.timerStartedAt = (new Date()).getTime();
+		this.timer = setInterval(() => {
+			func();
+			sendJson(this.socket, {timePassed: 0});
+			this.timerStartedAt += this.timeLimit * 1000;
+		}, timeLimit*1000);
+		sendJson(this.socket, {timePassed: 0});
+	}
+	
+	timePassed() {
+		if (!this.timer) {
+			return 0;
+		}
+		return ((new Date()).getTime() - this.timerStartedAt) / 1000;
 	}
 }
 
 class Game {
-	constructor(wordRemove, hardMode, amtGuesses, ws) {
+	constructor(wordRemove, hardMode, amtGuesses, timeLimit, ws) {
 		this.wordRemove = wordRemove;
 		this.hardMode = !!hardMode;
 		this.players = new Map([[makeId(), new PlayerData(ws)]]);
 		this.wordLength = 5;
 		this.amtGuesses = amtGuesses;
+		this.timeLimit = timeLimit;
 		this.gameId = null;
 	}
 	
@@ -82,6 +108,10 @@ class Game {
 		
 		if (!wordlist.isValidWord(guess)) {
 			return error("Invalid word");
+		}
+		
+		if (this.timeLimit) {
+			playerData.startTimer(this.timeLimit, () => this.sendPenalty(playerId));
 		}
 		
 		if (playerData.word === guess) {
@@ -123,24 +153,31 @@ class Game {
 		}
 	}
 	
+	sendPenalty(playerId) {
+		let playerData = this.players.get(playerId);
+		if (playerData) {
+			let guessColors = this.getColors(playerData.word, "");
+			playerData.guesses.push("");
+			playerData.guessColors.push(guessColors);
+			
+			this.sendToOpponents(playerId, { opponentColors: guessColors });
+			
+			this.checkHasLost(playerId);
+			
+			sendJson(playerData.socket, {
+				guessResult: {
+					word: "",
+					colors: guessColors
+				}
+			});
+		}
+	}
+	
 	// Send penalty row to all players except the one specified
 	sendPenalties(fromPlayerId) {
 		for (const [id, playerData] of this.players) {
 			if (id !== fromPlayerId) {
-				let guessColors = this.getColors(playerData.word, "");
-				playerData.guesses.push("");
-				playerData.guessColors.push(guessColors);
-				
-				this.sendToOpponents(id, { opponentColors: guessColors });
-				
-				this.checkHasLost(id);
-				
-				sendJson(playerData.socket, {
-					guessResult: {
-						word: "",
-						colors: guessColors
-					}
-				});
+				this.sendPenalty(id);
 			}
 		}
 	}
@@ -236,8 +273,10 @@ class Game {
 	removePlayer(playerId) {
 		let playerData = this.players.get(playerId);
 		let client = clients.get(playerData.socket);
-		client.game = null;
-		client.playerId = null;
+		if (client) {
+			client.game = null;
+			client.playerId = null;
+		}
 		
 		this.players.delete(playerId);
 		
@@ -268,6 +307,7 @@ class Game {
 				client.game = this;
 				client.playerId = id;
 			}
+			playerData.startTimer(this.timeLimit, () => this.sendPenalty(id));
 			sendJson(playerData.socket, this.getPlayerGameData(id));
 		}
 	}
@@ -303,7 +343,9 @@ class Game {
 			amtGuesses: this.amtGuesses,
 			gameId: this.gameId,
 			playerId: playerId,
-			opponentGuessColors: opponentGuessColors
+			opponentGuessColors: opponentGuessColors,
+			timeLimit: this.timeLimit,
+			timePassed: playerData.timePassed()
 		};
 	}
 }
@@ -359,14 +401,16 @@ wss.on('connection', (ws) => {
 					message.wordRemove < 1 || 
 					message.wordRemove > 3 ||
 					!Number.isInteger(message.amtGuesses) ||
-					message.amtGuesses < 6) {
+					message.amtGuesses < 6 ||
+					!Number.isInteger(message.timeLimit) ||
+					message.timeLimit < 0 ) {
 					return sendJson(ws, error("Settings not provided for join"));
 				}
 				
 				clientQueue.delete(ws);
 				
 				for (let [cws, game] of clientQueue.entries()) {
-					if (game.hardMode === !!message.hardMode && game.wordRemove === message.wordRemove && game.amtGuesses === message.amtGuesses) {
+					if (game.hardMode === message.hardMode && game.wordRemove === message.wordRemove && game.amtGuesses === message.amtGuesses && game.timeLimit === message.timeLimit) {
 						let gameId = makeId();
 						clientQueue.delete(cws);
 						games.set(gameId, game);
@@ -377,7 +421,7 @@ wss.on('connection', (ws) => {
 					}
 				}
 				
-				clientQueue.set(ws, new Game(message.wordRemove, message.hardMode, message.amtGuesses, ws));
+				clientQueue.set(ws, new Game(message.wordRemove, message.hardMode, message.amtGuesses, message.timeLimit, ws));
 				return sendJson(ws, {wait: true});
 			}
 			
