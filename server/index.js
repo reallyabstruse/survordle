@@ -6,6 +6,7 @@ const WebSocket = require('ws');
 const express = require('express');
 const http = require('http');
 const path = require('path');
+const { v4: uuidv4 } = require('uuid');
 
 var app = express();
 var server = http.createServer(app);
@@ -19,7 +20,7 @@ const BLACK = "black";
 const WHITE = "white";
 
 var games = new Map();
-var clientQueue = new Map();
+var gamesInLobby = new Map();
 var clients = new Map();
 
 var clientsInLobby = new Set();
@@ -37,15 +38,6 @@ function error(str, gameover=undefined) {
 		};
 }
 
-function makeId() {
-	let id;
-	do {
-		id = (1+Math.random()).toString(36).slice(2, 10).toUpperCase();
-	} while (id.length != 8);
-	
-	return id;
-}
-
 function refreshLobbies() {
 	for (let clientSocket of clientsInLobby) {
 		refreshLobby(clientSocket);
@@ -54,7 +46,7 @@ function refreshLobbies() {
 
 function refreshLobby(clientSocket) {
 	let lobby = [];
-	for (let [hostSocket, gameData] of clientQueue) {
+	for (let [hostSocket, gameData] of gamesInLobby) {
 		if (hostSocket != clientSocket) {
 			lobby.push([gameData.wordRemove, gameData.amtGuesses, gameData.timeLimit, gameData.hardMode]);
 		}
@@ -96,10 +88,10 @@ class PlayerData {
 }
 
 class Game {
-	constructor(wordRemove, hardMode, amtGuesses, timeLimit, ws) {
+	constructor(wordRemove, amtGuesses, timeLimit, hardMode, ws) {
 		this.wordRemove = wordRemove;
 		this.hardMode = !!hardMode;
-		this.players = new Map([[makeId(), new PlayerData(ws)]]);
+		this.players = new Map([[uuidv4(), new PlayerData(ws)]]);
 		this.wordLength = 5;
 		this.amtGuesses = amtGuesses;
 		this.timeLimit = timeLimit;
@@ -285,7 +277,7 @@ class Game {
 	}
 
 	addPlayer(ws) {
-		this.players.set(makeId(), new PlayerData(ws));
+		this.players.set(uuidv4(), new PlayerData(ws));
 	}
 	
 	removePlayer(playerId) {
@@ -322,7 +314,7 @@ class Game {
 		}
 		
 		for (const [id, playerData] of this.players) {
-			clientQueue.delete(playerData.socket);
+			gamesInLobby.delete(playerData.socket);
 			clientsInLobby.delete(playerData.socket);
 			
 			let client = clients.get(playerData.socket);
@@ -417,7 +409,7 @@ wss.on('connection', (ws) => {
 				client.playerId = message.playerId;
 				
 				clientsInLobby.delete(ws);
-				clientQueue.delete(ws);
+				gamesInLobby.delete(ws);
 				
 				return sendJson(ws, client.game.getPlayerGameData(client.playerId));
 			}
@@ -438,9 +430,9 @@ wss.on('connection', (ws) => {
 					return sendJson(ws, error("Settings not provided for join"));
 				}
 				
-				for (let [cws, game] of clientQueue.entries()) {
+				for (let [cws, game] of gamesInLobby.entries()) {
 					if (game.hardMode === message.hardMode && game.wordRemove === message.wordRemove && game.amtGuesses === message.amtGuesses && game.timeLimit === message.timeLimit) {
-						let gameId = makeId();
+						let gameId = uuidv4();
 						games.set(gameId, game);
 						
 						game.addPlayer(ws);
@@ -449,9 +441,9 @@ wss.on('connection', (ws) => {
 					}
 				}
 				
-				clientQueue.set(ws, new Game(message.wordRemove, message.hardMode, message.amtGuesses, message.timeLimit, ws));
+				gamesInLobby.set(ws, new Game(message.wordRemove, message.amtGuesses, message.timeLimit, message.hardMode, ws));
 				refreshLobbies();
-				return sendJson(ws, {wait: true});
+				return sendJson(ws, {wait: [message.wordRemove, message.amtGuesses, message.timeLimit, message.hardMode]});
 			}
 			
 			case "guess":
@@ -478,7 +470,7 @@ wss.on('connection', (ws) => {
 				playerData.socket = null;
 			}
 		}
-		clientQueue.delete(ws);
+		gamesInLobby.delete(ws);
 		clients.delete(ws);
 		clientsInLobby.delete(ws);
 		

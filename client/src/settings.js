@@ -107,10 +107,14 @@ class Settings extends React.Component {
 
   valueToString(val) {
 	  if (Number.isInteger(val)) {
-		  return val;
+		  return val || "∞";
 	  }
 	  
 	  return val ? "On" : "Off";
+  }
+  
+  gameArrayToDOM(arr) {
+	  return arr.map((val, i) => <td key={i}>{this.valueToString(val)}</td>);
   }
 	
   render() {
@@ -157,22 +161,31 @@ class Settings extends React.Component {
 				updateHandler={this.props.updateSetting}
 			  />
 			  
-			  <button onClick={() => this.props.startGame(false)}>Start Solo Game</button>
-			  <button onClick={() => this.props.startGame(true)}>Start Duel Game</button>{this.props.wait ? "Please wait..." : null}
+			  <div className="start-buttons">
+				  <button onClick={() => this.props.startGame(false)}>Start Solo Game</button>
+				  <button onClick={() => this.props.startGame(true)}>Start Duel Game</button>
+			  </div>
 		  </div>
-		  <div>
-			Lobby
+		  <div className="lobby">
+			<div className="lobby-title">
+				Lobby
+			</div>
 			<table>
 				<thead>
-					<tr><th>Word remove</th><th>Guesses</th><th>Time</th><th>Hard mode</th></tr>
+					<tr><th></th><th>Word remove</th><th>Guesses</th><th>Time</th><th>Hard mode</th></tr>
 				</thead>
 				<tbody>
+					{this.props.wait && <tr className="own-game-lobby">
+						<td><div className="spinner"></div></td>
+						{this.gameArrayToDOM(this.props.wait)}
+						</tr>}
 					{this.props.lobby.map((arr, i) => 
-						<tr key={i} onClick={() => this.props.joinGame(arr)}>
-							{arr.map((val, j) => 
-								<td key={j}>{this.valueToString(val)}</td>)}
+						<tr className="lobby-game" key={i} onClick={() => this.props.joinGame(arr)}>
+							<td></td>
+							{this.gameArrayToDOM(arr)}
 						</tr>
 					)}
+					{!this.props.lobby.length && !this.props.wait && <tr><td colspan="5">No games in lobby</td></tr>}
 				</tbody>
 			</table>
 		  </div>

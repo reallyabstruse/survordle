@@ -5,54 +5,11 @@ import * as ReactDOMClient from 'react-dom/client';
 
 import {SettingSelect, SettingSlider, Setting, Settings} from './settings.js';
 import {KeyBoardButton, KeyBoard} from './keyboard.js';
+import {GuessRow, GameInfo, GREEN, YELLOW, BLACK, WHITE, RED} from './helpers.js';
 
 const classNames = require('classnames');
 
-const GREEN = "green";
-const YELLOW = "yellow";
-const RED = "red";
-const BLACK = "black";
-const WHITE = "white";
-
 const wordlist = require("./wordlist.js");
-
-class GuessCell extends React.Component {
-  render() {
-    return (
-      <div className={classNames("cell", this.props.color)}>
-        <div className="letter">{this.props.value}</div>
-		{this.props.opponentGuessColor && <div className={classNames("opponent-color", this.props.opponentGuessColor)}></div>}
-      </div>
-    );
-  }
-}
-
-GuessCell.defaultProps = { color: WHITE };
-
-class GuessRow extends React.Component {
-  render() {
-    let boxes = [];
-
-    for (let i = 0; i < this.props.wordLength; i++) {
-      boxes.push(
-        <GuessCell
-          key={i}
-          value={this.props.val && this.props.val.charAt(i)}
-          color={this.props.colors[i]}
-		  opponentGuessColor={this.props.opponentGuessColors && this.props.opponentGuessColors[i]}
-        />
-      );
-    }
-
-    return (
-        <div className="guessrow">
-          {boxes}
-        </div>
-    );
-  }
-}
-
-GuessRow.defaultProps = { colors: {} };
 
 class Game extends React.Component {
   constructor(props) {	  
@@ -280,7 +237,7 @@ class Game extends React.Component {
 	  } else if (data.gameId && data.playerId) {
 		  this.setState({
 			  showSettings: false,
-			  wait: false
+			  wait: null
 			}, this.setCellDimension);
 		  this.setGameAndPlayerId(data.gameId, data.playerId);
 	  }
@@ -576,6 +533,10 @@ class Game extends React.Component {
 		  this.resetTimer();
 	  }
   }
+  
+  toggleGameInfo() {
+	  this.setState({showGameInfo: !this.state.showGameInfo});
+  }
 
   render() {
 	let rows = [];
@@ -605,20 +566,24 @@ class Game extends React.Component {
 				<div className="headertitle">
 					Survordle
 				</div>
-				<div className="headerright"></div>
+				<div className="headerright">
+					<button className="game-info-button" onClick={() => this.toggleGameInfo()}>?</button>
+				</div>
 			</header>
 			
-			{this.state.showSettings ? (
-			<Settings
-			  startGame={this.startGame}
-			  updateSetting={this.updateSetting}
-			  settings={this.state.settings}
-			  gameoverMessage={this.state.gameoverMessage}
-			  wait={this.state.wait}
-			  lobby={this.state.lobby}
-			  joinGame={this.joinGame}
-					  />
-					) : null}
+			{this.state.showSettings &&
+				<Settings
+				  startGame={this.startGame}
+				  updateSetting={this.updateSetting}
+				  settings={this.state.settings}
+				  gameoverMessage={this.state.gameoverMessage}
+				  wait={this.state.wait}
+				  lobby={this.state.lobby}
+				  joinGame={this.joinGame}
+						  />
+			}
+			
+			{this.state.showGameInfo && <GameInfo hide={() => this.toggleGameInfo()}/>}
 
 			<div
 			  ref={this.refGuessesContainer}
@@ -642,7 +607,7 @@ class Game extends React.Component {
 			<footer>
 			<div 
 				ref={this.refTimer}
-				className={classNames("timer", {paused: this.state.showSettings})}
+				className={classNames({timer: this.state.timeLimit, paused: this.state.showSettings})}
 				style={{
 					"--duration": this.state.timeLimit, 
 					"--time-passed":  this.state.timePassed

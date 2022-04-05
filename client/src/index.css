@@ -17,7 +17,7 @@ body {
 
 .button {
   height: 10vmin;
-  width: 7vmin;
+  min-width: 7vmin;
   margin: 1vmin;
 }
 
@@ -154,11 +154,11 @@ body {
 .popup {
   position: absolute;
   top: 10%;
-  width: 80%;
+  max-width: 80%;
   margin: auto;
   background-color: var(--main-color);
   z-index: 20;
-  border-radius: var(--cell-size);
+  border-radius: 5vmin;
   border: 5px solid var(--secondary-color);
   min-height: calc(var(--cell-size) * 2);
   padding: var(--cell-size);
@@ -166,15 +166,32 @@ body {
 
 .popup table {
 	width: 100%;
+	border-collapse: collapse;
 }
 
-.popup th {
-	text-align: left;
-}
-
-.popup tbody tr:hover {
+.lobby-game:hover {
 	cursor: pointer;
 	background-color: #9090ff;
+}
+
+.popup td {
+	min-width: 4vmin;
+}
+
+.own-game-lobby {
+	color: grey;
+}
+
+.lobby {
+	border-top: 1px solid var(--secondary-color);
+	text-align: center;
+	font-weight: bold;
+	font-size: 3vmin;
+}
+
+.lobby-title {
+	border-bottom: 1px solid var(--secondary-color);
+	font-size: 4vmin;
 }
 
 .overlay {
@@ -187,9 +204,9 @@ body {
 }
 
 .spinner {
-  width: 15vmin;
-  height: 15vmin;
-  border: 3vmin solid #a0a0a0;
+  width: 3vmin;
+  height: 3vmin;
+  border: 1vmin solid #a0a0a0;
   border-top-color: #202020;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -235,7 +252,23 @@ header {
   width: 100%;
   justify-content: space-between;
   margin-bottom: 1vh;
-  text-size: 100vmin;
+  font-size: 4vmin;
+}
+
+.setting select {
+	font-size: 3vmin;
+	text-align: right;
+	width: 21vmin;
+}
+
+.start-buttons {
+	text-align: center;
+}
+
+.start-buttons button {
+	margin: 2vmin;
+	margin: 4vmin 2vmin;
+	font-size: 3vmin;
 }
 
 .gameover-message {
@@ -243,8 +276,8 @@ header {
 }
 
 .slider {
-  width: 16vmin;
-  height: 8vmin;
+  width: 10vmin;
+  height: 4vmin;
   background-color: #303030;
   border-radius: 5vmin;
   position: relative;
@@ -253,12 +286,28 @@ header {
 .slider:before {
   position: absolute;
   left: 1vmin;
-  top: 1vmin;
-  width: 6vmin;
-  height: 6vmin;
+  top: 0.5vmin;
+  width: 3vmin;
+  height: 3vmin;
   background-color: #909090;
   border-radius: 50%;
   content: "";
+}
+
+.game-info-button {
+	border-radius: 50%;
+	z-index: 20;
+	position: relative;
+	font-size: 5vmin;
+	width: 5vmin;
+	height: 5vmin;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.title {
+	min-width: 70vmin;
 }
 
 .switch input {
@@ -266,7 +315,7 @@ header {
 }
 
 input:checked + .slider:before {
-  transform: translateX(8vmin);
+  transform: translateX(5vmin);
   background-color: #a0ffff;
 }
 
