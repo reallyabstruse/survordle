@@ -1,7 +1,4 @@
 :root {
-  --cell-size: 7vmin;
-  --cell-margin: 1vmin;
-  --cell-total-size: calc(var(--cell-size) + 2 * var(--cell-margin));
   --main-color: white;
   --secondary-color: black;
 }
@@ -114,12 +111,12 @@ body {
 
 .message {
   position: absolute;
-  top: calc(var(--cell-total-size) * 3.5);
+  top: 20%;
   z-index: 10;
   width: fit-content;
   margin: 0 auto;
   text-align: center;
-  padding: calc(2 * var(--cell-margin));
+  padding: 2vmin;
   border-radius: 10px;
   opacity: 1;
   left: 0;
@@ -136,21 +133,6 @@ body {
 	font-size: 200%;
 }
 
-.dictbutton {
-  border: 1px solid;
-  position: absolute;
-  right: calc(var(--cell-total-size) * -1);
-  border-radius: 50%;
-  width: var(--cell-size);
-  height: var(--cell-size);
-  line-height: var(--cell-size);
-  margin: var(--cell-margin);
-  font-size: var(--cell-size);
-  text-align: center;
-  cursor: pointer;
-  box-sizing: border-box;
-}
-
 .popup {
   position: absolute;
   top: 10%;
@@ -160,8 +142,7 @@ body {
   z-index: 20;
   border-radius: 5vmin;
   border: 5px solid var(--secondary-color);
-  min-height: calc(var(--cell-size) * 2);
-  padding: var(--cell-size);
+  padding: 7vmin;
 }
 
 .popup table {
@@ -307,7 +288,7 @@ header {
 }
 
 .title {
-	min-width: 70vmin;
+	min-width: 60vmin;
 }
 
 .switch input {

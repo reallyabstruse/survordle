@@ -10,53 +10,51 @@ const WHITE = "white";
 
 
 class GuessCell extends React.Component {
-  render() {
-    return (
-      <div className={classNames("cell", this.props.color)}>
-        <div className="letter">{this.props.value}</div>
+	render() {
+		return (
+			<div className={classNames("cell", this.props.color)}>
+				<div className="letter">{this.props.value}</div>
 		{this.props.opponentGuessColor && <div className={classNames("opponent-color", this.props.opponentGuessColor)}></div>}
-      </div>
-    );
-  }
+			</div>
+		);
+	}
 }
 
-GuessCell.defaultProps = { color: WHITE };
-
 class GuessRow extends React.Component {
-  render() {
-    let boxes = [];
+	render() {
+		let boxes = [];
 
-    for (let i = 0; i < this.props.wordLength; i++) {
-      boxes.push(
-        <GuessCell
-          key={i}
-          value={this.props.val && this.props.val.charAt(i)}
-          color={this.props.colors[i]}
-		  opponentGuessColor={this.props.opponentGuessColors && this.props.opponentGuessColors[i]}
-        />
-      );
-    }
+		for (let i = 0; i < this.props.wordLength; i++) {
+			boxes.push(
+				<GuessCell
+					key={i}
+					value={this.props.val && this.props.val.charAt(i)}
+					color={this.props.colors[i]}
+			opponentGuessColor={this.props.opponentGuessColors && this.props.opponentGuessColors[i]}
+				/>
+			);
+		}
 
-    return (
-        <div className="guessrow" style={{"--cell-dimension": this.props.cellDimension}}>
-          {boxes}
-        </div>
-    );
-  }
+		return (
+				<div className="guessrow" style={{"--cell-dimension": this.props.cellDimension}}>
+					{boxes}
+				</div>
+		);
+	}
 }
 
 GuessRow.defaultProps = { colors: {} };
 
 class GameInfo extends React.Component {
-  render() {
+	render() {
 	let messageDiv = this.props.gameoverMessage ? <div className="gameover-message">{this.props.gameoverMessage}</div> : null;
-	  
-    return (
-      <>
-        <div className="overlay" onClick={this.props.hide}></div>
-        <div className="popup">
+		
+		return (
+			<>
+				<div className="overlay" onClick={this.props.hide}></div>
+				<div className="popup">
 			<h2>Basics</h2>
-			<div>The goal of the game is to correctly guess as many five-letter words as possible with a limited amount of guesses. Every guess gives you colorcoded feedback on each letter you have guesses.</div>
+			<div>The goal of the game is to correctly guess as many five-letter words as possible with a limited amount of guesses. Every guess gives you colorcoded feedback on each letter you have guessed.</div>
 
 <h2>Example</h2>
 <GuessRow wordLength="5" cellDimension="5vmin" val="WORLD" colors={[GREEN, BLACK, YELLOW, BLACK, BLACK]}/>
@@ -77,10 +75,10 @@ class GameInfo extends React.Component {
 <div>Game is inspired by <a href="https://www.nytimes.com/games/wordle/index.html">Wordle</a></div>
 
 <div>Created by Sindre Dammann</div>
-        </div>
-      </>
-    );
-  }
+				</div>
+			</>
+		);
+	}
 }
 
 export {GameInfo, GuessRow, GREEN, YELLOW, BLACK, WHITE, RED};
