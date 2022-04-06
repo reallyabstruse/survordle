@@ -1,9 +1,9 @@
 (function(exports){
-	const GREEN = "green";
-	const YELLOW = "yellow";
-	const RED = "red";
-	const BLACK = "black";
-	const WHITE = "white";
+	var GREEN = "green";
+	var YELLOW = "yellow";
+	var RED = "red";
+	var BLACK = "black";
+	var WHITE = "white";
 
 	// Get colors for a single guess
 	exports.getColors = function(guess, solution) {
@@ -67,4 +67,4 @@
 	exports.GREEN = GREEN;
 	exports.BLACK = BLACK;
 	exports.WHITE = WHITE;
-})(typeof exports === 'undefined'? window['shared_module']={}: exports);
+})(typeof exports === 'undefined'? window['shared']={}: exports);

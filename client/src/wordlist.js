@@ -11,4 +11,4 @@
 	exports.isValidWord = function(word) {
 		return possibleSolutions.includes(word) || wordList.includes(word);
 	}
-})(typeof exports === 'undefined'? window['wordlist_module']={}: exports);
+})(typeof exports === 'undefined'? window['wordlist']={}: exports);
