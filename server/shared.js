@@ -5,7 +5,7 @@ var BLACK = "black";
 var WHITE = "white";
 
 // Get colors for a single guess
-function getColors(guess, solution) {
+exports. = function getColors(guess, solution) {
 	if (!guess) {
 		return new Array(solution.length).fill(RED);
 	}
@@ -43,7 +43,7 @@ function getColors(guess, solution) {
 	return colors;
 }
 
-function hardModeCheck (guess, guesses, guessColors) {	
+exports.hardModeCheck = function(guess, guesses, guessColors) {	
 	for (let j in guessColors) {
 		let row = guessColors[j];
 		for (let i in row) {
@@ -61,4 +61,8 @@ function hardModeCheck (guess, guesses, guessColors) {
 	return true;
 }
 
-export {RED, YELLOW, GREEN, BLACK, WHITE, hardModeCheck, getColors};
+exports.RED = RED;
+exports.YELLOW = YELLOW;
+exports.GREEN = GREEN;
+exports.BLACK = BLACK;
+exports.WHITE = WHITE;
