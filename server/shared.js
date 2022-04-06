@@ -5,7 +5,7 @@ var BLACK = "black";
 var WHITE = "white";
 
 // Get colors for a single guess
-exports. = function getColors(guess, solution) {
+exports.getColors = function(guess, solution) {
 	if (!guess) {
 		return new Array(solution.length).fill(RED);
 	}

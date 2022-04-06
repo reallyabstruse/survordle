@@ -1,6 +1,6 @@
 const PORT = process.env.PORT || 3001;
 
-const shared = require("../client/src/shared.js");
+const shared = require("./shared.js");
 const wordlist = require("../client/src/wordlist.js");
 
 const WebSocket = require('ws');
