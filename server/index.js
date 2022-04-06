@@ -1,5 +1,6 @@
 const PORT = process.env.PORT || 3001;
 
+const shared = require("../client/src/shared.js");
 const wordlist = require("../client/src/wordlist.js");
 
 const WebSocket = require('ws');
@@ -11,13 +12,6 @@ const { v4: uuidv4 } = require('uuid');
 var app = express();
 var server = http.createServer(app);
 var wss = new WebSocket.Server({ server: server });
-
-
-const GREEN = "green";
-const YELLOW = "yellow";
-const RED = "red";
-const BLACK = "black";
-const WHITE = "white";
 
 var games = new Map();
 var gamesInLobby = new Map();
@@ -69,14 +63,19 @@ class PlayerData {
 	
 	startTimer(timeLimit, func) {
 		this.timeLimit = timeLimit;
+		
+		if (!timeLimit) {
+			return;
+		}
+		
 		clearInterval(this.timer);
 		this.timerStartedAt = (new Date()).getTime();
 		this.timer = setInterval(() => {
 			func();
-			sendJson(this.socket, {timePassed: 0, a: 1});
+			sendJson(this.socket, {timePassed: 0});
 			this.timerStartedAt += this.timeLimit * 1000;
 		}, timeLimit*1000);
-		sendJson(this.socket, {timePassed: 0, a: 2});
+		sendJson(this.socket, {timePassed: 0});
 	}
 	
 	timePassed() {
@@ -112,7 +111,7 @@ class Game {
 			return error("No guesses left");
 		}
 		
-		if (!this.hardModeCheck(playerId, guess)) {
+		if (this.hardMode && !shared.hardModeCheck(guess, playerData.guesses, playerData.guessColors)) {
 			return error("Hard mode failed");
 		}
 		
@@ -124,6 +123,7 @@ class Game {
 			playerData.startTimer(this.timeLimit, () => this.sendPenalty(playerId));
 		}
 		
+		// Correct guess
 		if (playerData.word === guess) {
 			let wordsToRemove = Math.min(this.wordRemove, playerData.guesses.length);
 			
@@ -132,8 +132,8 @@ class Game {
 			playerData.word = wordlist.getSolutionWord();
 			playerData.guesses.splice(0, wordsToRemove);
 			playerData.guesses.push(guess);
-			playerData.guessColors = playerData.guesses.map((item, index) => {
-					  return this.getColors(playerData.word, item);
+			playerData.guessColors = playerData.guesses.map((word, index) => {
+					  return shared.getColors(word, playerData.word);
 					});
 			
 			this.sendToOpponents(playerId, { opponentGuessColors: playerData.guessColors } );
@@ -144,10 +144,10 @@ class Game {
 				guesses: playerData.guesses,
 				guessColors: playerData.guessColors
 				};
+		// Incorrect guess
 		} else {
-		
 			playerData.guesses.push(guess);
-			let guessColors = this.getColors(playerData.word, guess);
+			let guessColors = shared.getColors(guess, playerData.word);
 			playerData.guessColors.push(guessColors);
 
 			this.checkHasLost(playerId);
@@ -166,7 +166,7 @@ class Game {
 	sendPenalty(playerId) {
 		let playerData = this.players.get(playerId);
 		if (playerData) {
-			let guessColors = this.getColors(playerData.word, "");
+			let guessColors = shared.getColors("", playerData.word);
 			playerData.guesses.push("");
 			playerData.guessColors.push(guessColors);
 			
@@ -210,70 +210,6 @@ class Game {
 				gameoverMessage: "You lost, last word was " + playerData.word
 			});
 		}
-	}
-	
-	getColors(solution, guess) {
-		if (!guess) {
-			return new Array(this.wordLength).fill(RED);
-		}
-		
-		let colors = new Array(this.wordLength).fill("");
-
-		let arr_solution = [...solution];
-		let arr_guess = [...guess];
-
-		for (let i = 0; i < arr_solution.length; i++) {
-			if (arr_guess[i] === arr_solution[i]) {
-				arr_solution[i] = arr_guess[i] = "";
-				colors[i] = GREEN;
-			}
-		}
-
-		for (let i = 0; i < arr_guess.length; i++) {
-			if (!arr_guess[i]) {
-				continue;
-			}
-			for (let j = 0; j < arr_solution.length; j++) {
-				if (arr_guess[i] === arr_solution[j]) {
-					arr_guess[i] = arr_solution[j] = "";
-					colors[i] = YELLOW;
-					break;
-				}
-			}
-		}
-
-		for (let i = 0; i < arr_guess.length; i++) {
-			if (arr_guess[i]) {
-			  colors[i] = BLACK;
-			}
-		}
-		return colors;
-	}
-	
-	hardModeCheck(playerId, guess) {
-		if (!this.hardMode) {
-			return true;
-		}
-		
-		let playerData = this.players.get(playerId);
-		
-		let guessColors = playerData.guessColors;
-		
-		for (let j in guessColors) {
-			let row = guessColors[j];
-			for (let i in row) {
-				if (row[i] === GREEN) {
-					if (guess[i] !== playerData.guesses[j][i]) {
-						return false;
-					}
-				} else if (row[i] === YELLOW) {
-					if (guess[i] === playerData.guesses[j][i] || !guess.includes(playerData.guesses[j][i])) {
-						return false;
-					}
-				}
-			}
-		}
-		return true;
 	}
 
 	addPlayer(ws) {

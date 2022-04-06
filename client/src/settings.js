@@ -185,7 +185,9 @@ class Settings extends React.Component {
 							{this.gameArrayToDOM(arr)}
 						</tr>
 					)}
-					{!this.props.lobby.length && !this.props.wait && <tr><td colspan="5">No games in lobby</td></tr>}
+					{!this.props.lobby.length && !this.props.wait && <tr>
+							<td className="empty-lobby" colSpan="5">No games in lobby</td>
+						</tr>}
 				</tbody>
 			</table>
 			</div>

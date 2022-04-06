@@ -5,11 +5,13 @@ import * as ReactDOMClient from 'react-dom/client';
 
 import { SettingSelect, SettingSlider, Setting, Settings } from './settings.js';
 import { KeyBoardButton, KeyBoard } from './keyboard.js';
-import { GuessRow, GameInfo, GREEN, YELLOW, BLACK, WHITE, RED } from './helpers.js';
+import { GuessRow, GameInfo } from './helpers.js';
+
 
 const classNames = require('classnames');
 
 const wordlist = require("./wordlist.js");
+const shared = require("./shared.js");
 
 class Game extends React.Component {
 	constructor(props) {
@@ -31,7 +33,7 @@ class Game extends React.Component {
 			wordsToRemove: 0,
 			stats: Settings.loadStats(),
 			settings: Settings.loadSettings(),
-			showSettings: true,
+			showMenu: true,
 			gameId: localStorage.getItem("gameId"),
 			playerId: localStorage.getItem("playerId"),
 			opponentGuessColors: [],
@@ -67,6 +69,13 @@ class Game extends React.Component {
 				return;
 			}
 
+			if (event.which === 27) {
+				// esc
+				this.toggleGameInfo(false);
+				return;
+			}
+
+
 			let key = event.key.toUpperCase();
 			if (key.search(this.state.acceptedLetters) === 0) {
 				this.addLetter(key);
@@ -77,13 +86,169 @@ class Game extends React.Component {
 		window.addEventListener("resize", () => this.setCellDimension());
 	}
 
-	setCellDimension() {
-		this.setState({
-			cellDimension: Math.min(this.refGuessesContainer.current.offsetWidth / this.state.wordLength, 
-				this.refGuessesContainer.current.offsetHeight / this.state.amtGuesses) - 1
-		});
-	}
+	// Immediately start a solo game or send server request to start a duel game.
+	startGame(duel = false) {
+		if (duel) {
+			this.sendJson({
+				action: "join",
+				...this.state.settings
+			});
+		} else {
+			this.setState({
+				showMenu: false,
+				score: 0,
+				solution: wordlist.getSolutionWord(),
+				guesses: [],
+				guessColors: [],
+				keyboardColors: {},
+				opponentGuessColors: [],
+				gameId: null,
+				playerId: null,
+				wait: null,
+				...this.state.settings
+			}, this.setCellDimension);
 
+			this.resetTimer();
+
+			if (this.ws) {
+				this.ws.close();
+				this.ws = null;
+			}
+		}
+
+		this.setState({ duel: duel });
+	}
+	
+	// Verify validity of guess and either add it to guesses or send it to server for processing.
+	submitGuess() {
+		// No submitting if game has ended or word removal animation is in progress
+		if (this.state.showMenu || this.state.wordsToRemove) {
+			return;
+		}
+
+		let guess = this.state.curguess;
+
+		if (guess.length !== this.state.wordLength) {
+			this.showError("Not enough letters");
+			return;
+		}
+
+		if (this.state.hardMode && !shared.hardModeCheck(guess, this.state.guesses, this.state.guessColors)) {
+			this.showError("Must abide by old hints in hard mode");
+			return;
+		}
+
+		if (!wordlist.isValidWord(guess)) {
+			this.showError("Invalid word");
+			return;
+		}
+
+		if (this.state.duel) {
+			return this.sendJson({
+				action: "guess",
+				guess: guess
+			});
+		}
+
+		this.resetTimer();
+
+		if (guess === this.state.solution) {
+			this.showSuccess("Correct!");
+
+			// Remove some guesses, but always leave the last guess
+			let wordsToRemove = Math.min(
+				this.state.wordRemove,
+				this.state.guesses.length
+			);
+
+			let guesses = [...this.state.guesses, guess];
+			let newSolution = wordlist.getSolutionWord();
+
+			let guessColors = [
+				...this.state.guessColors.slice(0, wordsToRemove),
+				...guesses.slice(wordsToRemove)
+					.map((item, index) => {
+						return shared.getColors(item, newSolution);
+					})
+			];
+
+			this.setState(
+				{
+					curguess: "",
+					guesses: guesses,
+					score: this.state.score + 1,
+					solution: newSolution,
+					wordsToRemove: wordsToRemove,
+					guessColors: guessColors,
+					keyboardColors: this.getKeyboardColors(guesses.slice(wordsToRemove), guessColors.slice(wordsToRemove))
+				}
+			);
+		} else {
+			this.addIncorrectGuess(guess);
+		}
+	}
+	
+	handleServerResponse(data) {
+		if (data.error) {
+			this.showError(data.error);
+		} else if (data.success) {
+			this.showSuccess(data.success);
+		}
+
+		let passOnParameters = ["hardMode", "wordRemove", "wordsToRemove", "amtGuesses", "timeLimit", "wait", "opponentGuessColors", "lobby"];
+
+		for (let p of passOnParameters) {
+			if (p in data) {
+				this.setState({ [p]: data[p] });
+			}
+		}
+
+		// process result of incorrect guess
+		if (data.guessResult) {
+			this.setState({
+				curguess: data.guessResult.word ? "" : this.state.curguess, // Remove current guess if not a penalty row
+				guesses: [...this.state.guesses, data.guessResult.word],
+				guessColors: [...this.state.guessColors, data.guessResult.colors]
+			});
+
+			for (let i = 0; i < this.state.wordLength; i++) {
+				this.addKeyboardColor(data.guessResult.word[i], data.guessResult.colors[i]);
+			}
+		// process complete list of all guesses and colors
+		} else if (data.guesses && data.guessColors) {
+			this.setState({
+				guessColors: [...this.state.guessColors.slice(0, data.wordsToRemove || 0), ...data.guessColors],
+				keyboardColors: this.getKeyboardColors(data.guesses, data.guessColors),
+				curguess: "",
+				guesses: [...this.state.guesses.slice(0, data.wordsToRemove || 0), ...data.guesses]
+			});
+		}
+
+		if (data.opponentColors) {
+			this.setState({
+				opponentGuessColors: [...this.state.opponentGuessColors, data.opponentColors]
+			});
+		}
+
+		if ("timePassed" in data) {
+			this.setState({ timePassed: data.timePassed }, () => this.resetTimer());
+		}
+
+		if (data.gameover) {
+			this.setGameAndPlayerId(null, null);
+			this.setState({
+				showMenu: true,
+				gameoverMessage: data.gameoverMessage
+			});
+		} else if (data.gameId && data.playerId) {
+			this.setState({
+				showMenu: false,
+				wait: null
+			}, this.setCellDimension);
+			this.setGameAndPlayerId(data.gameId, data.playerId);
+		}
+	}
+	
 	// Call with null to ensure that connected and send rejoin if game in progress
 	sendJson(obj) {
 		if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
@@ -126,9 +291,15 @@ class Game extends React.Component {
 			this.ws.addEventListener('close', e => {
 				this.ws = null;
 				clearInterval(this.pingInterval);
-
-				if (this.state.gameId && this.state.playerId) {
-					this.sendJson(null);
+			});
+			
+			this.ws.addEventListener('error', (e) => {				
+				this.ws = null;
+				clearInterval(this.pingInterval);
+				
+				if (this.showMenu || this.state.gameId) {
+					this.showError("Error connecting to server, reattempting.");
+					setTimeout(this.sendJson(null), 1000); // reconnect
 				}
 			});
 
@@ -147,101 +318,11 @@ class Game extends React.Component {
 		});
 	}
 
-	startGame(duel = false) {
-		if (duel) {
-			this.sendJson({
-				action: "join",
-				...this.state.settings
-			});
-		} else {
-			this.setState({
-				showSettings: false,
-				solution: wordlist.getSolutionWord(),
-				guesses: [],
-				guessColors: [],
-				keyboardColors: {},
-				opponentGuessColors: [],
-				gameId: null,
-				playerId: null,
-				wait: null,
-				...this.state.settings
-			}, this.setCellDimension);
-
-			this.resetTimer();
-
-			if (this.ws) {
-				this.ws.close();
-				this.ws = null;
-			}
-		}
-
-		this.setState({ duel: duel });
-	}
-
 	sendPing() {
 		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
 			this.sendJson({
 				action: "ping"
 			});
-		}
-	}
-
-	handleServerResponse(data) {
-		if (data.error) {
-			this.showError(data.error);
-		} else if (data.success) {
-			this.showSuccess(data.success);
-		}
-
-		let passOnParameters = ["hardMode", "wordRemove", "wordsToRemove", "amtGuesses", "timeLimit", "wait", "opponentGuessColors", "lobby"];
-
-		for (let p of passOnParameters) {
-			if (p in data) {
-				this.setState({ [p]: data[p] });
-			}
-		}
-
-		if (data.guessResult) {
-			this.setState({
-				curguess: "",
-				guesses: [...this.state.guesses, data.guessResult.word],
-				guessColors: [...this.state.guessColors, data.guessResult.colors]
-			});
-
-			for (let i = 0; i < this.state.wordLength; i++) {
-				this.addKeyboardColor(data.guessResult.word[i], data.guessResult.colors[i]);
-			}
-		} else if (data.guesses && data.guessColors) {
-			this.setState({
-				guessColors: [...this.state.guessColors.slice(0, data.wordsToRemove || 0), ...data.guessColors],
-				keyboardColors: this.getKeyboardColors(data.guesses, data.guessColors),
-				curguess: "",
-				guesses: [...this.state.guesses.slice(0, data.wordsToRemove || 0), ...data.guesses]
-			});
-		}
-
-		if (data.opponentColors) {
-			this.setState({
-				opponentGuessColors: [...this.state.opponentGuessColors, data.opponentColors]
-			});
-		}
-
-		if ("timePassed" in data) {
-			this.setState({ timePassed: data.timePassed }, () => this.resetTimer());
-		}
-
-		if (data.gameover) {
-			this.setGameAndPlayerId(null, null);
-			this.setState({
-				showSettings: true,
-				gameoverMessage: data.gameoverMessage
-			});
-		} else if (data.gameId && data.playerId) {
-			this.setState({
-				showSettings: false,
-				wait: null
-			}, this.setCellDimension);
-			this.setGameAndPlayerId(data.gameId, data.playerId);
 		}
 	}
 
@@ -261,105 +342,19 @@ class Game extends React.Component {
 		}
 	}
 
+	// Add a letter to the current guess
 	addLetter(key) {
-		if (!this.state.showSettings && this.state.curguess.length < this.state.wordLength) {
+		if (!this.state.showMenu && this.state.curguess.length < this.state.wordLength) {
 			this.setState({ curguess: this.state.curguess + key });
 		}
 	}
 
+	// Remove last letter from current guess (backspace)
 	removeLetter() {
 		this.setState({ curguess: this.state.curguess.slice(0, -1) });
 	}
 
-	hardModeCheck(guess) {
-		if (!this.state.hardMode) {
-			return true;
-		}
-		for (let j in this.state.guessColors) {
-			let row = this.state.guessColors[j];
-			for (let i in row) {
-				if (row[i] === GREEN) {
-					if (guess[i] !== this.state.guesses[j][i]) {
-						return false;
-					}
-				} else if (row[i] === YELLOW) {
-					if (guess[i] === this.state.guesses[j][i] || !guess.includes(this.state.guesses[j][i])) {
-						return false;
-					}
-				}
-			}
-		}
-		return true;
-	}
-
-	submitGuess() {
-		// No submitting if game has ended or word removal animation is in progress
-		if (this.state.showSettings || this.state.wordsToRemove) {
-			return;
-		}
-
-		let guess = this.state.curguess;
-
-		if (guess.length !== this.state.wordLength) {
-			this.showError("Not enough letters");
-			return;
-		}
-
-		if (!this.hardModeCheck(guess)) {
-			this.showError("Must abide by old hints in hard mode");
-			return;
-		}
-
-		if (!wordlist.isValidWord(guess)) {
-			this.showError("Invalid word");
-			return;
-		}
-
-		if (this.state.duel) {
-			return this.sendJson({
-				action: "guess",
-				guess: guess
-			});
-		}
-
-		this.resetTimer();
-
-		if (guess === this.state.solution) {
-			this.showSuccess("Correct!");
-
-			// Remove some guesses, but always leave the last guess
-			let wordsToRemove = Math.min(
-				this.state.wordRemove,
-				this.state.guesses.length
-			);
-
-			let guesses = [...this.state.guesses, guess];
-			let newSolution = wordlist.getSolutionWord();
-
-			let guessColors = [
-				...this.state.guessColors.slice(0, wordsToRemove),
-				...guesses.slice(wordsToRemove)
-					.map((item, index) => {
-						return this.getColors(item, newSolution);
-					})
-			];
-
-			this.setState(
-				{
-					curguess: "",
-					guesses: guesses,
-					score: this.state.score + 1,
-					solution: newSolution,
-					wordsToRemove: wordsToRemove,
-					guessColors: guessColors,
-					keyboardColors: this.getKeyboardColors(guesses.slice(wordsToRemove), guessColors.slice(wordsToRemove))
-				}
-			);
-		} else {
-			this.addIncorrectGuess(guess);
-		}
-	}
-
+	// Solo game only. Add an incorrect guess or by default a penalty row
 	addIncorrectGuess(guess = "") {
 		let newGuesses = [...this.state.guesses, guess];
 
@@ -367,7 +362,7 @@ class Game extends React.Component {
 			this.setState({ curguess: "" });
 		}
 
-		let newColors = this.getColors(guess, this.state.solution);
+		let newColors = shared.getColors(guess, this.state.solution);
 
 		this.setState({
 			guesses: newGuesses,
@@ -381,13 +376,14 @@ class Game extends React.Component {
 		if (newGuesses.length >= this.state.amtGuesses) {
 			this.updateStats();
 			this.setState({
-				showSettings: true,
+				showMenu: true,
 				gameoverMessage: "Game Over. Solution was " + this.state.solution
 			});
 			this.sendJson(null);
 		}
 	}
 
+	// Change a setting
 	updateSetting(name, val) {
 		if (typeof val === "string") {
 			val = parseInt(val);
@@ -418,44 +414,7 @@ class Game extends React.Component {
 		);
 	}
 
-	getColors(guess, solution) {
-		if (!guess) {
-			return new Array(this.state.wordLength).fill(RED);
-		}
-
-		let colors = new Array(this.state.wordLength).fill("");
-		let arr_guess = [...guess];
-		let arr_solution = [...solution];
-
-		for (let i = 0; i < arr_solution.length; i++) {
-			if (arr_guess[i] === arr_solution[i]) {
-				arr_solution[i] = arr_guess[i] = "";
-				colors[i] = GREEN;
-			}
-		}
-
-		for (let i = 0; i < arr_guess.length; i++) {
-			if (!arr_guess[i]) {
-				continue;
-			}
-			for (let j = 0; j < arr_solution.length; j++) {
-				if (arr_guess[i] === arr_solution[j]) {
-					arr_guess[i] = arr_solution[j] = "";
-					colors[i] = YELLOW;
-					break;
-				}
-			}
-		}
-
-		for (let i = 0; i < arr_guess.length; i++) {
-			if (arr_guess[i]) {
-				colors[i] = BLACK;
-			}
-		}
-
-		return colors;
-	}
-
+	// Get all the colors for the keyboard keys based on the given guess colors.
 	getKeyboardColors(guesses, guessColors) {
 		let keyboardColors = {}
 		for (let i in guesses) {
@@ -465,7 +424,7 @@ class Game extends React.Component {
 				let letter = guess[j];
 				let color = colorRow[j];
 
-				if (!(letter in keyboardColors) || color === GREEN) {
+				if (!(letter in keyboardColors) || color === shared.GREEN) {
 					keyboardColors[letter] = color;
 				}
 			}
@@ -474,9 +433,10 @@ class Game extends React.Component {
 		return keyboardColors;
 	}
 
+	// Add a single color to a keyboard key, unless the key already has a higher priority color.
 	addKeyboardColor(key, color) {
 		this.setState(prevState => {
-			if (key in prevState.keyboardColors && color !== GREEN) {
+			if (key in prevState.keyboardColors && color !== shared.GREEN) {
 				return {};
 			}
 
@@ -489,6 +449,7 @@ class Game extends React.Component {
 		});
 	}
 
+	// Called on end of slide out animation for removing words
 	finishWordRemoval() {
 		this.setState({
 			guesses: this.state.guesses.slice(this.state.wordsToRemove),
@@ -508,20 +469,33 @@ class Game extends React.Component {
 		this.messageHideId = setTimeout(this.hideMessage, 1000);
 	}
 
-	showError(text, infinite = false) {
-		this.showMessage(RED, text, infinite);
-	}
-
-	showSuccess(text, infinite = false) {
-		this.showMessage(GREEN, text, infinite);
-	}
-
 	hideMessage() {
 		this.setState({
 			showmessage: false
 		});
 
 		this.messageHideId = 0;
+	}
+
+	showError(text, infinite = false) {
+		this.showMessage(shared.RED, text, infinite);
+	}
+
+	showSuccess(text, infinite = false) {
+		this.showMessage(shared.GREEN, text, infinite);
+	}
+	
+	// Display or hide game info menu. Default toggle.
+	toggleGameInfo(show = undefined) {
+		this.setState({ showGameInfo: show === undefined ? !this.state.showGameInfo : show });
+	}
+	
+	// Set dimensions of each cell in guesses
+	setCellDimension() {
+		this.setState({
+			cellDimension: Math.min(this.refGuessesContainer.current.offsetWidth / this.state.wordLength, 
+				this.refGuessesContainer.current.offsetHeight / this.state.amtGuesses) - 1
+		});
 	}
 
 	resetTimer() {
@@ -535,10 +509,6 @@ class Game extends React.Component {
 			this.addIncorrectGuess();
 			this.resetTimer();
 		}
-	}
-
-	toggleGameInfo() {
-		this.setState({ showGameInfo: !this.state.showGameInfo });
 	}
 
 	render() {
@@ -575,7 +545,7 @@ class Game extends React.Component {
 						</div>
 					</header>
 
-					{this.state.showSettings &&
+					{this.state.showMenu &&
 						<Settings
 							startGame={this.startGame}
 							updateSetting={this.updateSetting}
@@ -611,7 +581,7 @@ class Game extends React.Component {
 					<footer>
 						<div
 							ref={this.refTimer}
-							className={classNames({ timer: this.state.timeLimit, paused: this.state.showSettings })}
+							className={classNames({ timer: this.state.timeLimit, paused: this.state.showMenu })}
 							style={{
 								"--duration": this.state.timeLimit,
 								"--time-passed": this.state.timePassed
