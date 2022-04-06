@@ -67,4 +67,4 @@
 	exports.GREEN = GREEN;
 	exports.BLACK = BLACK;
 	exports.WHITE = WHITE;
-})(typeof exports === 'undefined'? window['mymodule']={}: exports);
+})(typeof exports === 'undefined'? window['shared_module']={}: exports);
