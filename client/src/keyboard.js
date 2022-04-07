@@ -1,7 +1,5 @@
 import React from 'react';
 
-const classNames = require('classnames');
-
 class KeyBoard extends React.Component {
 	symbolToKey(symbol) {
 		if (symbol === "#") {

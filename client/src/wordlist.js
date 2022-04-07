@@ -4,7 +4,6 @@
 	  
 	exports.getSolutionWord = function () {
 		let word = possibleSolutions[Math.floor(Math.random() * possibleSolutions.length)];
-		console.log(word);
 		return word;
 	}
 

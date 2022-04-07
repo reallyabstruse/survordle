@@ -3,10 +3,10 @@ import './index.css';
 import React from 'react';
 import * as ReactDOMClient from 'react-dom/client';
 
-import { SettingSelect, SettingSlider, Setting, Settings } from './settings.js';
-import { KeyBoardButton, KeyBoard } from './keyboard.js';
-import { GuessRow, GameInfo } from './helpers.js';
-
+import { Menu } from './Menu.js';
+import { KeyBoard } from './Keyboard.js';
+import { GuessRow } from './GuessRow.js';
+import { GameInfo } from './GameInfo.js';
 
 const classNames = require('classnames');
 
@@ -31,8 +31,8 @@ class Game extends React.Component {
 			guessColors: [],
 			score: 0,
 			wordsToRemove: 0,
-			stats: Settings.loadStats(),
-			settings: Settings.loadSettings(),
+			stats: Menu.loadStats(),
+			settings: Menu.loadSettings(),
 			showMenu: true,
 			gameId: localStorage.getItem("gameId"),
 			playerId: localStorage.getItem("playerId"),
@@ -546,7 +546,7 @@ class Game extends React.Component {
 					</header>
 
 					{this.state.showMenu &&
-						<Settings
+						<Menu
 							startGame={this.startGame}
 							updateSetting={this.updateSetting}
 							settings={this.state.settings}
