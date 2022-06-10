@@ -7,7 +7,7 @@ class GuessCell extends React.Component {
 	render() {
 		return (
 			<div className={classNames("cell", this.props.color)}>
-				<div className="letter">{this.props.value}</div>
+				<div className="letter" role="cell" state={this.props.color} name={this.props.value && "letter"}>{this.props.value}</div>
 				{this.props.opponentGuessColor && <div className={classNames("opponent-color", this.props.opponentGuessColor)}></div>}
 			</div>
 		);

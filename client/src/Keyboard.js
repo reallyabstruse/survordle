@@ -3,7 +3,7 @@ import React from 'react';
 class KeyBoard extends React.Component {
 	symbolToKey(symbol) {
 		if (symbol === "#") {
-			return "\u2003⌫\u00A0";
+			return "\u2003\u232B\u00A0";
 		}
 		if (symbol === "*") {
 			return "ENTER";
@@ -44,7 +44,12 @@ class KeyBoard extends React.Component {
 
 function KeyBoardButton(props) {
 	return (
-		<button onClick={() => props.clickhandler(props.value)} className={"button " + props.color}>
+		<button 
+			onClick={() => props.clickhandler(props.value)} 
+			className={"button " + props.color} 
+			state={props.color}
+			name="key"
+		>
 			{props.value}
 		</button>
 	);
